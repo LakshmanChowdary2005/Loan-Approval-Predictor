@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bulk Batch Application Scoring | CreditPulse AI</title>
+    <meta name="description" content="Upload and evaluate hundreds of loan applications simultaneously in batch mode. Receive automated underwriting decisions and CSV exports.">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+
+    <!-- Top Status Ticker -->
+    <div class="top-ticker" id="top-status-ticker">
+        <div class="ticker-item">
+            <span class="status-dot"></span>
+            <span><strong>Batch Scoring Engine Online</strong> • Supports Up to 5,000 Rows/Batch</span>
+        </div>
+        <div style="display: flex; gap: 1.5rem; align-items: center;">
+            <div class="ticker-item"><span>Format:</span> <strong>RFC 4180 CSV</strong></div>
+        </div>
+    </div>
+
+    <!-- Navigation Header -->
+    <nav class="navbar" id="main-navbar">
+        <a href="/" class="nav-brand" id="brand-link">
+            <div class="brand-icon">🏦</div>
+            <div>
+                <span>CreditPulse AI</span>
+                <span class="brand-badge">Batch Scoring</span>
+            </div>
+        </a>
+
+        <ul class="nav-links">
+            <li><a href="/" class="nav-link" id="nav-home">Home</a></li>
+            <li><a href="/predict" class="nav-link" id="nav-predict">Predictor</a></li>
+            <li><a href="/simulator" class="nav-link" id="nav-simulator">What-If Simulator</a></li>
+            <li><a href="/batch" class="nav-link active" id="nav-batch">Batch Scoring</a></li>
+            <li><a href="/dashboard" class="nav-link" id="nav-dashboard">Analytics & EDA</a></li>
+        </ul>
+
+        <div class="nav-controls">
+            <button type="button" class="btn-icon" id="sound-toggle-btn" title="Toggle Sound Feedback">🔊</button>
+            <button type="button" class="btn-icon" id="theme-toggle-btn" title="Toggle Theme">🌙</button>
+            <a href="/predict" class="btn btn-primary btn-nav">Single Predictor ➔</a>
+        </div>
+    </nav>
+
+    <!-- Main Content Container -->
+    <main class="container" id="main-container">
+        
+        <div class="card-header" style="border:none; margin-bottom: 1.5rem; padding-bottom: 0;">
+            <div>
+                <h1 style="font-size: clamp(1.4rem, 2.5vw, 1.95rem); font-weight: 800;">
+                    📁 Bulk Batch <span class="gradient-text">Application Scoring Engine</span>
+                </h1>
+                <p class="card-subtitle">
+                    Upload batches of applicant records to score entire loan portfolios asynchronously with high-speed parallel inference.
+                </p>
+            </div>
+            
+            <div>
+                <a href="/api/sample-csv" class="btn btn-secondary" style="font-size: 0.85rem; padding: 0.6rem 1rem;">
+                    📥 Download Template CSV
+                </a>
+            </div>
+        </div>
+
+        <!-- Upload Dropzone Card -->
+        <div class="card">
+            <div class="dropzone" id="csv-dropzone">
+                <input type="file" id="csv-file-input" accept=".csv" style="display: none;">
+                <div class="dropzone-icon">📤</div>
+                <h3 style="font-size: 1.3rem; font-weight: 800; margin-bottom: 0.35rem;">
+                    Drag & Drop Your Applications CSV Here
+                </h3>
+                <p style="font-size: 0.88rem; color: var(--text-muted); margin-bottom: 1rem;">
+                    Or click anywhere in this box to select a CSV file from your computer.
+                </p>
+                <button type="button" class="btn btn-primary" style="pointer-events: none;">
+                    Browse CSV File
+                </button>
+            </div>
+        </div>
+
+        <!-- Batch Results Display Box -->
+        <div class="card" id="batch-results-box" style="display: none;">
+            <!-- Populated via AJAX in script.js -->
+        </div>
+
+    </main>
+
+    <footer class="footer">
+        <p>© 2026 CreditPulse AI • Batch Processing Platform • Built with Python & Scikit-Learn</p>
+    </footer>
+
+    <script src="/static/js/script.js"></script>
+</body>
+</html>

@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Loan Analytics & Model Intelligence Dashboard | CreditPulse AI</title>
+    <meta name="description" content="Comprehensive analytics dashboard for loan approval prediction: exploratory data analysis, algorithm comparison benchmarks, and dataset explorer.">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Chart.js CDN for interactive charts -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+
+    <!-- Top Status Ticker -->
+    <div class="top-ticker" id="top-status-ticker">
+        <div class="ticker-item">
+            <span class="status-dot"></span>
+            <span><strong>Model Registry Synchronized</strong> • 5 Algorithms Evaluated</span>
+        </div>
+        <div style="display: flex; gap: 1.5rem; align-items: center;">
+            <div class="ticker-item"><span>Benchmark Accuracy:</span> <strong style="color: #34d399;">86.2%</strong></div>
+            <div class="ticker-item"><span>Portfolio Applications:</span> <strong>614 Records</strong></div>
+        </div>
+    </div>
+
+    <!-- Navigation Header -->
+    <nav class="navbar" id="main-navbar">
+        <a href="/" class="nav-brand" id="brand-link">
+            <div class="brand-icon">🏦</div>
+            <div>
+                <span>CreditPulse AI</span>
+                <span class="brand-badge">Analytics Hub</span>
+            </div>
+        </a>
+
+        <ul class="nav-links">
+            <li><a href="/" class="nav-link" id="nav-home">Home</a></li>
+            <li><a href="/predict" class="nav-link" id="nav-predict">Predictor</a></li>
+            <li><a href="/simulator" class="nav-link" id="nav-simulator">What-If Simulator</a></li>
+            <li><a href="/batch" class="nav-link" id="nav-batch">Batch Scoring</a></li>
+            <li><a href="/dashboard" class="nav-link active" id="nav-dashboard">Analytics & EDA</a></li>
+        </ul>
+
+        <div class="nav-controls">
+            <button type="button" class="btn-icon" id="sound-toggle-btn" title="Toggle Sound Feedback">🔊</button>
+            <button type="button" class="btn-icon" id="theme-toggle-btn" title="Toggle Theme">🌙</button>
+            <a href="/predict" class="btn btn-primary btn-nav" id="nav-predict-btn">Predict Loan ➔</a>
+        </div>
+    </nav>
+
+    <!-- Main Content Container -->
+    <main class="container" id="main-container">
+        
+        <div class="card-header" style="border:none; margin-bottom: 1.5rem; padding-bottom: 0;">
+            <div>
+                <h1 style="font-size: clamp(1.4rem, 2.5vw, 1.95rem); font-weight: 800;">
+                    📊 Portfolio Analytics & <span class="gradient-text">Model Benchmarks</span>
+                </h1>
+                <p class="card-subtitle">
+                    In-depth exploratory data analysis (EDA), comparative model evaluation across 5 algorithms, and interactive historical dataset explorer.
+                </p>
+            </div>
+            
+            <div style="display: flex; gap: 0.6rem;">
+                <a href="/simulator" class="btn btn-secondary" style="font-size: 0.85rem; padding: 0.55rem 0.95rem;">
+                    🎛️ Open Simulator
+                </a>
+                <a href="/batch" class="btn btn-secondary" style="font-size: 0.85rem; padding: 0.55rem 0.95rem;">
+                    📁 Batch Scoring
+                </a>
+            </div>
+        </div>
+
+        <!-- Top Stat Cards -->
+        <section class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon indigo">📋</div>
+                <div class="stat-info">
+                    <h4>Dataset Size</h4>
+                    <div class="stat-value">614 Records</div>
+                    <div class="stat-note">11 predictive features</div>
+                </div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-icon emerald">✅</div>
+                <div class="stat-info">
+                    <h4>Approval Rate</h4>
+                    <div class="stat-value">68.7%</div>
+                    <div class="stat-note">422 approved / 192 rejected</div>
+                </div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-icon cyan">🏆</div>
+                <div class="stat-info">
+                    <h4>Top Test Accuracy</h4>
+                    <div class="stat-value">86.2%</div>
+                    <div class="stat-note">Logistic Regression & Extra Trees</div>
+                </div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-icon amber">⚡</div>
+                <div class="stat-info">
+                    <h4>Credit Leverage</h4>
+                    <div class="stat-value">10.1x</div>
+                    <div class="stat-note">Approval ratio: Good vs Bad credit</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Interactive Charts Row -->
+        <div class="two-column-grid" style="margin-bottom: 2rem;">
+            
+            <!-- Model Performance Chart -->
+            <div class="card" style="margin-bottom:0;">
+                <div class="card-header">
+                    <div>
+                        <h3 class="card-title">🤖 Algorithm Comparison</h3>
+                        <div class="card-subtitle">5-Fold Cross Validation vs Test Accuracy (%)</div>
+                    </div>
+                </div>
+                <div style="height: 280px; position: relative;">
+                    <canvas id="chart-model-comparison"></canvas>
+                </div>
+            </div>
+
+            <!-- Feature Importance Chart -->
+            <div class="card" style="margin-bottom:0;">
+                <div class="card-header">
+                    <div>
+                        <h3 class="card-title">⭐ Feature Importance Ranking</h3>
+                        <div class="card-subtitle">Top factors influencing Random Forest decision (%)</div>
+                    </div>
+                </div>
+                <div style="height: 280px; position: relative;">
+                    <canvas id="chart-feature-imp"></canvas>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Benchmark Metrics Table -->
+        <section class="card" id="benchmark-section">
+            <div class="card-header">
+                <div>
+                    <h3 class="card-title">🔬 Comprehensive Multi-Model Benchmark</h3>
+                    <div class="card-subtitle">Rigorous statistical evaluation on 20% holdout test set (Stratified)</div>
+                </div>
+                <span class="brand-badge">Cross-Validated</span>
+            </div>
+
+            <div class="table-container">
+                <table class="benchmark-table">
+                    <thead>
+                        <tr>
+                            <th>Model Algorithm</th>
+                            <th>5-Fold CV Accuracy</th>
+                            <th>Test Accuracy</th>
+                            <th>Precision</th>
+                            <th>Recall (Sensitivity)</th>
+                            <th>F1-Score</th>
+                            <th>ROC-AUC Score</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% if metadata and metadata.benchmark_metrics %}
+                            {% for name, metrics in metadata.benchmark_metrics.items() %}
+                            <tr class="{% if name == 'Random Forest' or name == 'Logistic Regression' %}highlight{% endif %}">
+                                <td>
+                                    <strong>{{ name }}</strong>
+                                    {% if name == metadata.default_model %}
+                                    <span style="font-size:0.7rem; background:rgba(99,102,241,0.25); color:#a5b4fc; padding:0.15rem 0.4rem; border-radius:4px; margin-left:0.4rem;">Production Default</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ metrics.cv_accuracy_mean }}% <span style="font-size:0.75rem; color:#64748b;">(±{{ metrics.cv_accuracy_std }}%)</span></td>
+                                <td><strong style="color:#34d399;">{{ metrics.test_accuracy }}%</strong></td>
+                                <td>{{ metrics.precision }}%</td>
+                                <td>{{ metrics.recall }}%</td>
+                                <td>{{ metrics.f1_score }}%</td>
+                                <td>{{ metrics.roc_auc }}%</td>
+                            </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr><td colspan="7">Benchmark metrics loading...</td></tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- EDA Visual Gallery -->
+        <section class="card" id="eda-gallery-section">
+            <div class="card-header">
+                <div>
+                    <h3 class="card-title">📈 Exploratory Data Analysis (EDA) Gallery</h3>
+                    <div class="card-subtitle">Statistical distributions, cross-tabulations, and correlation matrices</div>
+                </div>
+            </div>
+
+            <div class="gallery-grid">
+                
+                <div class="gallery-card">
+                    <img src="/static/images/eda/credit_history_vs_approval.png" alt="Credit History vs Approval" class="gallery-img">
+                    <div class="gallery-caption">
+                        <h4>Credit History vs Loan Status</h4>
+                        <p>Applicants with prime credit history (1.0) achieve ~79.6% approval versus only ~7.9% for bad credit (0.0).</p>
+                    </div>
+                </div>
+
+                <div class="gallery-card">
+                    <img src="/static/images/eda/property_area_vs_approval.png" alt="Property Area vs Approval" class="gallery-img">
+                    <div class="gallery-caption">
+                        <h4>Property Location Impact</h4>
+                        <p>Semiurban areas demonstrate the highest approval rates (76.8%), followed by Urban (65.8%) and Rural (61.5%).</p>
+                    </div>
+                </div>
+
+                <div class="gallery-card">
+                    <img src="/static/images/eda/education_vs_approval.png" alt="Education vs Approval" class="gallery-img">
+                    <div class="gallery-caption">
+                        <h4>Education Level Influence</h4>
+                        <p>Graduate applicants exhibit higher approval rates (70.8%) reflecting stable earning potential.</p>
+                    </div>
+                </div>
+
+                <div class="gallery-card">
+                    <img src="/static/images/eda/income_vs_loan_scatter.png" alt="Income vs Loan Amount" class="gallery-img">
+                    <div class="gallery-caption">
+                        <h4>Income vs Loan Amount ($k)</h4>
+                        <p>Bivariate scatter analysis showcasing loan distribution boundaries and approved vs rejected clustering.</p>
+                    </div>
+                </div>
+
+                <div class="gallery-card">
+                    <img src="/static/images/eda/correlation_heatmap.png" alt="Correlation Heatmap" class="gallery-img">
+                    <div class="gallery-caption">
+                        <h4>Feature Correlation Matrix</h4>
+                        <p>Credit history maintains the highest direct positive linear correlation (+0.56) with Loan_Status.</p>
+                    </div>
+                </div>
+
+                <div class="gallery-card">
+                    <img src="/static/images/eda/confusion_matrix_rf.png" alt="Confusion Matrix" class="gallery-img">
+                    <div class="gallery-caption">
+                        <h4>Confusion Matrix (Random Forest)</h4>
+                        <p>Demonstrates outstanding true positive identification (98.8% recall on approved loans).</p>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- Historical Dataset Explorer -->
+        <section class="card" id="dataset-explorer-section">
+            <div class="card-header">
+                <div>
+                    <h3 class="card-title">🗂️ Historical Applications Dataset Explorer</h3>
+                    <div class="card-subtitle">Browse, filter, and inspect raw records from <code>dataset/loan_data.csv</code></div>
+                </div>
+                
+                <div style="display: flex; gap: 0.8rem; align-items: center; flex-wrap: wrap;">
+                    <input type="text" id="table-search" class="form-control" placeholder="Search by ID, Area, Degree..." style="width: 220px; padding: 0.45rem 0.85rem; font-size: 0.85rem;">
+                    
+                    <select id="status-filter" class="form-control" style="width: auto; padding: 0.45rem 0.85rem; font-size: 0.85rem;">
+                        <option value="all">All Statuses</option>
+                        <option value="Y">Approved Only (Y)</option>
+                        <option value="N">Rejected Only (N)</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="table-container">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Loan ID</th>
+                            <th>Gender</th>
+                            <th>Married</th>
+                            <th>Dependents</th>
+                            <th>Education</th>
+                            <th>Self Employed</th>
+                            <th>App Income</th>
+                            <th>Coapp Income</th>
+                            <th>Loan Amount</th>
+                            <th>Term</th>
+                            <th>Credit History</th>
+                            <th>Property Area</th>
+                            <th>Loan Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="dataset-table-body">
+                        <!-- Populated via AJAX in script.js -->
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination Bar -->
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 1rem; padding-top: 0.75rem; border-top: 1px solid var(--border-color);">
+                <div id="table-total-count" style="font-size: 0.85rem; color: var(--text-muted);">
+                    Loading records...
+                </div>
+                <div style="display: flex; align-items: center; gap: 0.8rem;">
+                    <button type="button" id="prev-page-btn" class="btn btn-secondary" style="padding: 0.4rem 0.8rem; font-size: 0.82rem;">
+                        ◀ Previous
+                    </button>
+                    <span id="page-indicator" style="font-size: 0.85rem; font-weight: 600; color: #cbd5e1;">Page 1</span>
+                    <button type="button" id="next-page-btn" class="btn btn-secondary" style="padding: 0.4rem 0.8rem; font-size: 0.82rem;">
+                        Next ▶
+                    </button>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <p>© 2026 CreditPulse AI • Loan Approval Prediction System • Built with Python, Scikit-Learn, Flask & Chart.js</p>
+    </footer>
+
+    <script src="/static/js/script.js"></script>
+</body>
+</html>

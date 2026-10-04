@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Loan Approval Predictor & Underwriting Arena | CreditPulse AI</title>
+    <meta name="description" content="Interactive AI Loan Approval Predictor. Real-time multi-model underwriting, consensus voting, sensitivity curves, and explainable credit factors.">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+
+    <!-- Top Status Ticker -->
+    <div class="top-ticker" id="top-status-ticker">
+        <div class="ticker-item">
+            <span class="status-dot"></span>
+            <span><strong>Multi-Model Inference Active</strong> • Latency: ~12ms</span>
+        </div>
+        <div style="display: flex; gap: 1.5rem; align-items: center;">
+            <div class="ticker-item"><span>Benchmark Accuracy:</span> <strong style="color: #34d399;">86.2%</strong></div>
+            <div class="ticker-item"><span>Ensemble Voting:</span> <strong>5 Classifiers</strong></div>
+        </div>
+    </div>
+
+    <!-- Navigation Header -->
+    <nav class="navbar" id="main-navbar">
+        <a href="/" class="nav-brand" id="brand-link">
+            <div class="brand-icon">🏦</div>
+            <div>
+                <span>CreditPulse AI</span>
+                <span class="brand-badge">Predictor Arena</span>
+            </div>
+        </a>
+
+        <ul class="nav-links">
+            <li><a href="/" class="nav-link" id="nav-home">Home</a></li>
+            <li><a href="/predict" class="nav-link active" id="nav-predict">Predictor</a></li>
+            <li><a href="/simulator" class="nav-link" id="nav-simulator">What-If Simulator</a></li>
+            <li><a href="/batch" class="nav-link" id="nav-batch">Batch Scoring</a></li>
+            <li><a href="/dashboard" class="nav-link" id="nav-dashboard">Analytics & EDA</a></li>
+        </ul>
+
+        <div class="nav-controls">
+            <button type="button" class="btn-icon" id="sound-toggle-btn" title="Toggle Sound Feedback">🔊</button>
+            <button type="button" class="btn-icon" id="theme-toggle-btn" title="Toggle Theme">🌙</button>
+            <a href="/dashboard" class="btn btn-secondary" id="nav-analytics-btn">View Metrics 📊</a>
+        </div>
+    </nav>
+
+    <!-- Main Content Container -->
+    <main class="container" id="main-container">
+        
+        <div class="card-header" style="border:none; margin-bottom: 1rem; padding-bottom: 0;">
+            <div>
+                <h1 style="font-size: clamp(1.4rem, 2.5vw, 1.95rem); font-weight: 800;">
+                    🔮 Autonomous <span class="gradient-text">Loan Underwriting & Evaluation</span>
+                </h1>
+                <p class="card-subtitle">
+                    Enter applicant financial variables, trigger real-time ML inference, evaluate ensemble consensus, and generate official assessment documentation.
+                </p>
+            </div>
+
+            <!-- Algorithm Switcher -->
+            <div style="display:flex; align-items:center; gap:0.65rem;">
+                <label for="model-select" style="font-size:0.88rem; font-weight:700; color:#94a3b8;">Primary Classifier:</label>
+                <select id="model-select" class="form-control" style="padding:0.45rem 0.85rem; font-size:0.88rem; width:auto; border-color:rgba(99,102,241,0.5);">
+                    {% for m in models %}
+                    <option value="{{ m }}" {% if m == 'Random Forest' %}selected{% endif %}>{{ m }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+
+        <!-- Demonstration Preset Chips -->
+        <div class="presets-bar" id="presets-container">
+            <span style="font-size:0.85rem; font-weight:700; color:#c7d2fe; display:flex; align-items:center; gap:0.35rem;">
+                ⚡ 1-Click Profiles:
+            </span>
+            <button type="button" class="preset-chip" data-preset="prime" id="preset-prime">
+                🟢 Prime Applicant (Approved)
+            </button>
+            <button type="button" class="preset-chip" data-preset="high-risk" id="preset-risk">
+                🔴 High-Risk Applicant (Rejected)
+            </button>
+            <button type="button" class="preset-chip" data-preset="borderline" id="preset-borderline">
+                🟡 High Loan Amount (Urban)
+            </button>
+            <button type="button" class="preset-chip" data-preset="coapplicant" id="preset-coapplicant">
+                🟢 Co-Applicant Cushion
+            </button>
+        </div>
+
+        <!-- Two Column Workspace: Form vs Output Tabs -->
+        <div class="two-column-grid" style="align-items: start;">
+            
+            <!-- Left Column: Input Form -->
+            <div class="card" id="form-card" style="margin-bottom:0;">
+                <div class="card-header" style="margin-bottom: 1.25rem;">
+                    <h2 class="card-title">📝 Applicant Financial Profile</h2>
+                    <span style="font-size: 0.8rem; color: var(--text-dim);">11 Machine Learning Input Features</span>
+                </div>
+
+                <form id="loan-prediction-form" novalidate>
+                    <div class="form-grid">
+                        
+                        <!-- Gender -->
+                        <div class="form-group">
+                            <label for="gender" class="form-label">
+                                Gender <span class="helper">Applicant</span>
+                            </label>
+                            <select id="gender" class="form-control" required>
+                                <option value="Male" selected>Male</option>
+                                <option value="Female">Female</option>
+                            </select>
+                        </div>
+
+                        <!-- Married -->
+                        <div class="form-group">
+                            <label for="married" class="form-label">
+                                Marital Status <span class="helper">Household</span>
+                            </label>
+                            <select id="married" class="form-control" required>
+                                <option value="Yes" selected>Yes (Married)</option>
+                                <option value="No">No (Single)</option>
+                            </select>
+                        </div>
+
+                        <!-- Dependents -->
+                        <div class="form-group">
+                            <label for="dependents" class="form-label">
+                                Dependents <span class="helper">Count</span>
+                            </label>
+                            <select id="dependents" class="form-control" required>
+                                <option value="0" selected>0 Dependents</option>
+                                <option value="1">1 Dependent</option>
+                                <option value="2">2 Dependents</option>
+                                <option value="3">3+ Dependents</option>
+                            </select>
+                        </div>
+
+                        <!-- Education -->
+                        <div class="form-group">
+                            <label for="education" class="form-label">
+                                Education <span class="helper">Attainment</span>
+                            </label>
+                            <select id="education" class="form-control" required>
+                                <option value="Graduate" selected>Graduate</option>
+                                <option value="Not Graduate">Not Graduate</option>
+                            </select>
+                        </div>
+
+                        <!-- Self Employed -->
+                        <div class="form-group">
+                            <label for="self_employed" class="form-label">
+                                Self Employed <span class="helper">Work Type</span>
+                            </label>
+                            <select id="self_employed" class="form-control" required>
+                                <option value="No" selected>No (Salaried Professional)</option>
+                                <option value="Yes">Yes (Business / Entrepreneur)</option>
+                            </select>
+                        </div>
+
+                        <!-- Property Area -->
+                        <div class="form-group">
+                            <label for="property_area" class="form-label">
+                                Property Area <span class="helper">Collateral Area</span>
+                            </label>
+                            <select id="property_area" class="form-control" required>
+                                <option value="Semiurban" selected>Semiurban (Highest Historical Approval)</option>
+                                <option value="Urban">Urban</option>
+                                <option value="Rural">Rural</option>
+                            </select>
+                        </div>
+
+                        <!-- Applicant Income -->
+                        <div class="form-group">
+                            <label for="applicant_income" class="form-label">
+                                Applicant Income <span class="helper">$/Month</span>
+                            </label>
+                            <input type="number" id="applicant_income" class="form-control" step="any" value="5849" placeholder="Any value ($)" required>
+                        </div>
+
+                        <!-- Coapplicant Income -->
+                        <div class="form-group">
+                            <label for="coapplicant_income" class="form-label">
+                                Co-applicant Income <span class="helper">$/Month</span>
+                            </label>
+                            <input type="number" id="coapplicant_income" class="form-control" step="any" value="1500" placeholder="Any value ($)" required>
+                        </div>
+
+                        <!-- Loan Amount -->
+                        <div class="form-group">
+                            <label for="loan_amount" class="form-label">
+                                Loan Amount <span class="helper">in $1,000s</span>
+                            </label>
+                            <input type="number" id="loan_amount" class="form-control" step="any" value="140" placeholder="Any value ($1,000s)" required>
+                        </div>
+
+                        <!-- Loan Amount Term -->
+                        <div class="form-group">
+                            <label for="loan_term" class="form-label">
+                                Loan Term <span class="helper">Months</span>
+                            </label>
+                            <input type="number" id="loan_term" class="form-control" list="loan_term_presets" step="any" value="360" placeholder="Any months (e.g. 360)" required>
+                            <datalist id="loan_term_presets">
+                                <option value="360">360 months (30 Years)</option>
+                                <option value="240">240 months (20 Years)</option>
+                                <option value="180">180 months (15 Years)</option>
+                                <option value="120">120 months (10 Years)</option>
+                                <option value="84">84 months (7 Years)</option>
+                                <option value="60">60 months (5 Years)</option>
+                                <option value="36">36 months (3 Years)</option>
+                                <option value="12">12 months (1 Year)</option>
+                            </datalist>
+                        </div>
+
+                        <!-- Credit History (Critical Factor) -->
+                        <div class="form-group full-width">
+                            <label for="credit_history" class="form-label" style="color:#a5b4fc;">
+                                <span>⭐ Credit History (Decisive Risk Metric)</span>
+                                <span class="helper">Institutional Record</span>
+                            </label>
+                            <select id="credit_history" class="form-control" style="border-color: rgba(99,102,241,0.6); font-weight:600;" required>
+                                <option value="1.0" selected>1.0 — Meets Credit Guidelines (Prime / No Recorded Defaults)</option>
+                                <option value="0.0">0.0 — Poor Credit History / Recorded Defaults</option>
+                            </select>
+                        </div>
+
+                    </div>
+
+                    <!-- Live Financial Metrics Bar -->
+                    <div style="background: rgba(12,18,34,0.85); border: 1px solid var(--border-color); border-radius: 12px; padding: 1rem; margin-top: 1.35rem; display: flex; justify-content: space-around; text-align: center;">
+                        <div>
+                            <div style="font-size: 0.75rem; color: var(--text-dim); text-transform: uppercase; font-weight:700;">Total Household Income</div>
+                            <div id="live-total-income" style="font-size: 1.25rem; font-weight: 800; color: #a5b4fc;">$7,349</div>
+                        </div>
+                        <div style="border-left: 1px solid var(--border-color);"></div>
+                        <div>
+                            <div style="font-size: 0.75rem; color: var(--text-dim); text-transform: uppercase; font-weight:700;">Estimated EMI</div>
+                            <div id="live-est-emi" style="font-size: 1.25rem; font-weight: 800; color: #38bdf8;">$420/mo</div>
+                        </div>
+                        <div style="border-left: 1px solid var(--border-color);"></div>
+                        <div>
+                            <div style="font-size: 0.75rem; color: var(--text-dim); text-transform: uppercase; font-weight:700;">Debt-to-Income (DTI)</div>
+                            <div id="live-dti" style="font-size: 1.25rem; font-weight: 800; color: #34d399;">5.7%</div>
+                        </div>
+                    </div>
+
+                    <!-- Submit Button -->
+                    <div class="mt-3">
+                        <button type="submit" class="btn btn-primary w-full" id="predict-btn" style="justify-content: center; font-size: 1.15rem; padding: 0.95rem;">
+                            <span>🔮 Predict Loan Approval</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Right Column: Interactive Multi-Tab Underwriting Arena -->
+            <div class="card" id="output-arena-card" style="margin-bottom:0;">
+                
+                <!-- Tab Headers -->
+                <div class="card-tabs">
+                    <button type="button" class="tab-btn active" data-tab="tab-verdict" id="tab-btn-verdict">
+                        <span>📊 Underwriting Verdict</span>
+                    </button>
+                    <button type="button" class="tab-btn" data-tab="tab-consensus" id="tab-btn-consensus">
+                        <span>🤖 5-Model Consensus</span>
+                    </button>
+                    <button type="button" class="tab-btn" data-tab="tab-amortization" id="tab-btn-amort">
+                        <span>💰 EMI & Amortization</span>
+                    </button>
+                    <button type="button" class="tab-btn" data-tab="tab-sensitivity" id="tab-btn-sens">
+                        <span>📈 Sensitivity Curve</span>
+                    </button>
+                </div>
+
+                <!-- Tab 1: Underwriting Verdict -->
+                <div class="tab-pane" id="tab-verdict" style="display: block;">
+                    <div class="result-card" id="prediction-result-container">
+                        <div class="result-placeholder">
+                            <div class="result-placeholder-icon">🏦</div>
+                            <h3 style="font-size: 1.3rem; color: #f8fafc; font-weight:800;">Awaiting Applicant Evaluation</h3>
+                            <p style="font-size: 0.9rem; max-width: 340px; color:var(--text-muted);">
+                                Fill in the applicant details or click a <strong>Quick Profile</strong> above, then click <strong>Predict Loan Approval</strong>.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab 2: All 5 Models Consensus -->
+                <div class="tab-pane" id="tab-consensus" style="display: none;">
+                    <div id="consensus-results-container">
+                        <div style="text-align: center; padding: 3rem 1rem; color: var(--text-muted);">
+                            <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">🤖</div>
+                            <h4>Click "Predict Loan Approval" to run all 5 models simultaneously</h4>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab 3: Loan EMI & Amortization Breakdown -->
+                <div class="tab-pane" id="tab-amortization" style="display: none;">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem; text-align: center;">
+                        <div style="background: rgba(255,255,255,0.03); border:1px solid var(--border-color); border-radius: 10px; padding: 0.9rem;">
+                            <div style="font-size: 0.75rem; color: var(--text-dim); text-transform:uppercase;">Principal Borrowed</div>
+                            <div id="amort-principal" style="font-size: 1.25rem; font-weight: 800; color:#6366f1;">$140,000</div>
+                        </div>
+                        <div style="background: rgba(255,255,255,0.03); border:1px solid var(--border-color); border-radius: 10px; padding: 0.9rem;">
+                            <div style="font-size: 0.75rem; color: var(--text-dim); text-transform:uppercase;">Est. Total Interest (8.5%)</div>
+                            <div id="amort-interest" style="font-size: 1.25rem; font-weight: 800; color:#f59e0b;">$249,036</div>
+                        </div>
+                    </div>
+
+                    <div style="height: 250px; position: relative;">
+                        <canvas id="chart-amortization-canvas"></canvas>
+                    </div>
+
+                    <div style="display:flex; justify-content:space-between; background:rgba(255,255,255,0.02); border-radius:8px; padding:0.85rem; margin-top:1rem; font-size:0.88rem;">
+                        <span style="color:#94a3b8;">Total Cumulative Repayment:</span>
+                        <strong id="amort-total" style="color:#f8fafc;">$389,036</strong>
+                    </div>
+                </div>
+
+                <!-- Tab 4: Dynamic What-If Sensitivity Curve -->
+                <div class="tab-pane" id="tab-sensitivity" style="display: none;">
+                    <div style="margin-bottom: 0.75rem;">
+                        <h4 style="font-size: 1rem; font-weight: 700;">Approval Probability vs Requested Loan Amount</h4>
+                        <p style="font-size: 0.8rem; color: var(--text-muted);">
+                            Visualizes how your approval odds decrease as requested loan amount increases.
+                        </p>
+                    </div>
+                    <div style="height: 270px; position: relative;">
+                        <canvas id="chart-sensitivity-canvas"></canvas>
+                    </div>
+                </div>
+
+            </div>
+
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <p>© 2026 CreditPulse AI • Enterprise Loan Approval Prediction System • Built with Python, Scikit-Learn & Flask</p>
+    </footer>
+
+    <script src="/static/js/script.js"></script>
+</body>
+</html>

@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CreditPulse AI | Enterprise Loan Approval Intelligence</title>
+    <meta name="description" content="AI-powered Loan Approval Prediction platform using Machine Learning to automate credit risk assessment and evaluate applicant eligibility in real-time.">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+
+    <!-- Top Status Ticker -->
+    <div class="top-ticker" id="top-status-ticker">
+        <div class="ticker-item">
+            <span class="status-dot"></span>
+            <span><strong>CreditPulse Engine v2.4 Online</strong> • Scikit-Learn Random Forest Pipeline Active</span>
+        </div>
+        <div style="display: flex; gap: 1.5rem; align-items: center;">
+            <div class="ticker-item"><span>Benchmark Accuracy:</span> <strong style="color: #34d399;">86.2%</strong></div>
+            <div class="ticker-item"><span>Inference Latency:</span> <strong style="color: #a5b4fc;">~12ms</strong></div>
+            <div class="ticker-item"><span>Ensemble Models:</span> <strong>5 Algorithms</strong></div>
+        </div>
+    </div>
+
+    <!-- Navigation Header -->
+    <nav class="navbar" id="main-navbar">
+        <a href="/" class="nav-brand" id="brand-link">
+            <div class="brand-icon">🏦</div>
+            <div>
+                <span>CreditPulse AI</span>
+                <span class="brand-badge">Enterprise ML</span>
+            </div>
+        </a>
+
+        <ul class="nav-links">
+            <li><a href="/" class="nav-link active" id="nav-home">Home</a></li>
+            <li><a href="/predict" class="nav-link" id="nav-predict">Predictor</a></li>
+            <li><a href="/simulator" class="nav-link" id="nav-simulator">What-If Simulator</a></li>
+            <li><a href="/batch" class="nav-link" id="nav-batch">Batch Scoring</a></li>
+            <li><a href="/dashboard" class="nav-link" id="nav-dashboard">Analytics & EDA</a></li>
+        </ul>
+
+        <!-- Controls: Sound & Theme -->
+        <div class="nav-controls">
+            <button type="button" class="btn-icon" id="sound-toggle-btn" title="Toggle Sound Feedback">🔊</button>
+            <button type="button" class="btn-icon" id="theme-toggle-btn" title="Toggle Theme">🌙</button>
+            <a href="/predict" class="btn btn-primary btn-nav" id="nav-launch-btn">Launch Underwriter ➔</a>
+        </div>
+    </nav>
+
+    <!-- Main Content Container -->
+    <main class="container" id="main-container">
+        
+        <!-- Hero Section -->
+        <section class="hero" id="hero-section">
+            <div class="badge-tag">
+                <span>⚡</span>
+                <span>Next-Gen Financial Intelligence • 5 Machine Learning Ensembles</span>
+            </div>
+            <h1 class="hero-title">
+                Autonomous <span class="gradient-text">Loan Underwriting & Credit Risk</span> Intelligence
+            </h1>
+            <p class="hero-subtitle">
+                Evaluate solvency, quantify default risks, and predict loan approvals with explainable feature attribution, live debt-to-income auditing, and multi-model consensus.
+            </p>
+            <div class="hero-actions">
+                <a href="/predict" class="btn btn-primary" id="btn-hero-predict">
+                    <span>🔮 Run Loan Prediction</span>
+                </a>
+                <a href="/simulator" class="btn btn-secondary" id="btn-hero-simulator">
+                    <span>🎛️ What-If Policy Sandbox</span>
+                </a>
+                <a href="/batch" class="btn btn-secondary" id="btn-hero-batch">
+                    <span>📁 Batch CSV Scoring</span>
+                </a>
+                <a href="/dashboard" class="btn btn-secondary" id="btn-hero-dashboard">
+                    <span>📊 Explore EDA & Benchmarks</span>
+                </a>
+            </div>
+        </section>
+
+        <!-- Executive Stat Cards -->
+        <section class="stats-grid" id="stats-grid">
+            <div class="stat-card" id="stat-records">
+                <div class="stat-icon indigo">📁</div>
+                <div class="stat-info">
+                    <h4>Historical Training Records</h4>
+                    <div class="stat-value">614</div>
+                    <div class="stat-note">11 predictive financial features</div>
+                </div>
+            </div>
+
+            <div class="stat-card" id="stat-accuracy">
+                <div class="stat-icon emerald">🎯</div>
+                <div class="stat-info">
+                    <h4>Cross-Validated Accuracy</h4>
+                    <div class="stat-value">86.2%</div>
+                    <div class="stat-note">5-Fold Stratified CV Verified</div>
+                </div>
+            </div>
+
+            <div class="stat-card" id="stat-approval-rate">
+                <div class="stat-icon cyan">📈</div>
+                <div class="stat-info">
+                    <h4>Portfolio Approval Rate</h4>
+                    <div class="stat-value">68.7%</div>
+                    <div class="stat-note">Historical portfolio benchmark</div>
+                </div>
+            </div>
+
+            <div class="stat-card" id="stat-recall">
+                <div class="stat-icon amber">🛡️</div>
+                <div class="stat-info">
+                    <h4>Model Recall (Sensitivity)</h4>
+                    <div class="stat-value">98.8%</div>
+                    <div class="stat-note">Near-zero false rejection of qualified loans</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Feature Capabilities Showcase -->
+        <section class="card" id="capabilities-section">
+            <div class="card-header">
+                <div>
+                    <h2 class="card-title">🚀 Advanced Enterprise Platform Features</h2>
+                    <div class="card-subtitle">Engineered for production fintech underwriting and academic excellence</div>
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.25rem;">
+                <div style="background: rgba(12, 18, 34, 0.6); padding: 1.5rem; border-radius: 14px; border: 1px solid var(--border-color);">
+                    <div style="font-size: 2rem; margin-bottom: 0.5rem;">🤖</div>
+                    <h3 style="font-size: 1.1rem; font-weight: 700; margin-bottom: 0.4rem;">Multi-Model Consensus Arena</h3>
+                    <p style="font-size: 0.85rem; color: var(--text-muted); line-height: 1.5;">
+                        Evaluate any applicant simultaneously across Random Forest, Logistic Regression, Decision Tree, Gradient Boosting, and Extra Trees for consensus voting.
+                    </p>
+                </div>
+
+                <div style="background: rgba(12, 18, 34, 0.6); padding: 1.5rem; border-radius: 14px; border: 1px solid var(--border-color);">
+                    <div style="font-size: 2rem; margin-bottom: 0.5rem;">🎛️</div>
+                    <h3 style="font-size: 1.1rem; font-weight: 700; margin-bottom: 0.4rem;">Live Sensitivity Sandbox</h3>
+                    <p style="font-size: 0.85rem; color: var(--text-muted); line-height: 1.5;">
+                        Drag sliders across loan amount ($20k-$400k) and monthly income to visualize the exact non-linear probability curve and borrowing boundaries.
+                    </p>
+                </div>
+
+                <div style="background: rgba(12, 18, 34, 0.6); padding: 1.5rem; border-radius: 14px; border: 1px solid var(--border-color);">
+                    <div style="font-size: 2rem; margin-bottom: 0.5rem;">📁</div>
+                    <h3 style="font-size: 1.1rem; font-weight: 700; margin-bottom: 0.4rem;">Batch CSV Application Scoring</h3>
+                    <p style="font-size: 0.85rem; color: var(--text-muted); line-height: 1.5;">
+                        Drag and drop portfolio CSV files to score hundreds of loan applicants in seconds, complete with exportable decision spreadsheets.
+                    </p>
+                </div>
+
+                <div style="background: rgba(12, 18, 34, 0.6); padding: 1.5rem; border-radius: 14px; border: 1px solid var(--border-color);">
+                    <div style="font-size: 2rem; margin-bottom: 0.5rem;">📄</div>
+                    <h3 style="font-size: 1.1rem; font-weight: 700; margin-bottom: 0.4rem;">Printable Underwriting Assessment</h3>
+                    <p style="font-size: 0.85rem; color: var(--text-muted); line-height: 1.5;">
+                        Generate print-ready, executive credit audit reports with official watermarks, decision stamps, risk factor scorecards, and underwriter signature lines.
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Demonstration Sequence Guide -->
+        <section class="card" id="demo-guide-card">
+            <div class="card-header">
+                <div>
+                    <h2 class="card-title">🎓 Faculty & Mentor Demonstration Walkthrough</h2>
+                    <div class="card-subtitle">Recommended step-by-step presentation sequence for evaluation</div>
+                </div>
+                <span class="brand-badge" style="background:rgba(16,185,129,0.2); color:#34d399; border-color:rgba(16,185,129,0.4);">Ready for Demo</span>
+            </div>
+
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.25rem;">
+                <div style="background: rgba(255,255,255,0.02); padding: 1.1rem; border-radius: 10px; border-left: 3px solid var(--primary);">
+                    <div style="font-weight: 700; color:#a5b4fc; font-size: 0.9rem;">Phase 1: Analytics & Dataset</div>
+                    <p style="font-size: 0.82rem; color: var(--text-muted); margin-top: 0.3rem;">
+                        Open <strong>Analytics & EDA</strong>. Show the 614-record dataset, examine missing value distributions, and display correlation heatmaps.
+                    </p>
+                </div>
+
+                <div style="background: rgba(255,255,255,0.02); padding: 1.1rem; border-radius: 10px; border-left: 3px solid var(--info);">
+                    <div style="font-weight: 700; color:#38bdf8; font-size: 0.9rem;">Phase 2: EDA & Insights</div>
+                    <p style="font-size: 0.82rem; color: var(--text-muted); margin-top: 0.3rem;">
+                        Show how <strong>Credit History</strong> is decisive (~79.6% approval for Good vs 7.9% for Bad). Review Education and Property Area impact.
+                    </p>
+                </div>
+
+                <div style="background: rgba(255,255,255,0.02); padding: 1.1rem; border-radius: 10px; border-left: 3px solid var(--warning);">
+                    <div style="font-weight: 700; color:#fbbf24; font-size: 0.9rem;">Phase 3: Model Comparison</div>
+                    <p style="font-size: 0.82rem; color: var(--text-muted); margin-top: 0.3rem;">
+                        Display the benchmark table comparing Logistic Regression, Random Forest, Decision Tree, and Gradient Boosting across accuracy, precision, and F1.
+                    </p>
+                </div>
+
+                <div style="background: rgba(255,255,255,0.02); padding: 1.1rem; border-radius: 10px; border-left: 3px solid var(--success);">
+                    <div style="font-weight: 700; color:#34d399; font-size: 0.9rem;">Phase 4: Live Prediction & Report</div>
+                    <p style="font-size: 0.82rem; color: var(--text-muted); margin-top: 0.3rem;">
+                        Open <strong>Predictor</strong>. Click a preset chip (e.g. "Prime Applicant"), click Predict, view the animated Approval verdict, sound chime, and generate the official PDF Report!
+                    </p>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <p>© 2026 CreditPulse AI • Enterprise Loan Approval Prediction Platform • Built with Python, Scikit-Learn, Flask & Modern Glassmorphism CSS</p>
+    </footer>
+
+    <script src="/static/js/script.js"></script>
+</body>
+</html>

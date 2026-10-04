@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>What-If Sensitivity Sandbox | CreditPulse AI</title>
+    <meta name="description" content="Interactive policy sandbox to simulate real-time loan approval probabilities by adjusting income, credit history, and loan limits.">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+
+    <!-- Top Status Ticker -->
+    <div class="top-ticker" id="top-status-ticker">
+        <div class="ticker-item">
+            <span class="status-dot"></span>
+            <span><strong>Real-Time Policy Sandbox</strong> • Instant Parameter Sweeping</span>
+        </div>
+        <div style="display: flex; gap: 1.5rem; align-items: center;">
+            <div class="ticker-item"><span>Live Calculation:</span> <strong style="color: #34d399;">Active (&lt;15ms)</strong></div>
+        </div>
+    </div>
+
+    <!-- Navigation Header -->
+    <nav class="navbar" id="main-navbar">
+        <a href="/" class="nav-brand" id="brand-link">
+            <div class="brand-icon">🏦</div>
+            <div>
+                <span>CreditPulse AI</span>
+                <span class="brand-badge">Simulator</span>
+            </div>
+        </a>
+
+        <ul class="nav-links">
+            <li><a href="/" class="nav-link" id="nav-home">Home</a></li>
+            <li><a href="/predict" class="nav-link" id="nav-predict">Predictor</a></li>
+            <li><a href="/simulator" class="nav-link active" id="nav-simulator">What-If Simulator</a></li>
+            <li><a href="/batch" class="nav-link" id="nav-batch">Batch Scoring</a></li>
+            <li><a href="/dashboard" class="nav-link" id="nav-dashboard">Analytics & EDA</a></li>
+        </ul>
+
+        <div class="nav-controls">
+            <button type="button" class="btn-icon" id="sound-toggle-btn" title="Toggle Sound Feedback">🔊</button>
+            <button type="button" class="btn-icon" id="theme-toggle-btn" title="Toggle Theme">🌙</button>
+            <a href="/predict" class="btn btn-primary btn-nav">Loan Predictor ➔</a>
+        </div>
+    </nav>
+
+    <!-- Main Content Container -->
+    <main class="container" id="main-container">
+        
+        <div class="card-header" style="border:none; margin-bottom: 1.5rem; padding-bottom: 0;">
+            <div>
+                <h1 style="font-size: clamp(1.4rem, 2.5vw, 1.95rem); font-weight: 800;">
+                    🎛️ Real-Time <span class="gradient-text">What-If Policy Sandbox</span>
+                </h1>
+                <p class="card-subtitle">
+                    Drag sliders dynamically to see how tweaking income, loan amount, and credit score immediately shifts approval probability in real time.
+                </p>
+            </div>
+        </div>
+
+        <div class="two-column-grid" style="align-items: start;">
+            
+            <!-- Controls Column -->
+            <div class="card" style="margin-bottom:0;">
+                <div class="card-header">
+                    <h2 class="card-title">⚙️ Dynamic Parameter Sliders</h2>
+                    <span style="font-size:0.8rem; color:var(--text-dim);">Live Reactive Binding</span>
+                </div>
+
+                <!-- Model Selector -->
+                <div class="form-group" style="margin-bottom:1.25rem;">
+                    <label for="sim_model" class="form-label">Simulation Classifier</label>
+                    <select id="sim_model" class="form-control">
+                        {% for m in models %}
+                        <option value="{{ m }}" {% if m == 'Random Forest' %}selected{% endif %}>{{ m }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Applicant Income Slider -->
+                <div class="form-group" style="margin-bottom: 1.25rem;">
+                    <div class="form-label">
+                        <span>Applicant Income: <strong>$<span id="sim_income_val">5850</span>/mo</strong></span>
+                        <span class="helper">Range: $500 - $25,000</span>
+                    </div>
+                    <input type="range" id="sim_income" min="500" max="25000" step="50" value="5850" style="width:100%; accent-color:var(--primary); cursor:pointer;">
+                </div>
+
+                <!-- Coapplicant Income Slider -->
+                <div class="form-group" style="margin-bottom: 1.25rem;">
+                    <div class="form-label">
+                        <span>Co-applicant Income: <strong>$<span id="sim_coincome_val">1500</span>/mo</strong></span>
+                        <span class="helper">Range: $0 - $15,000</span>
+                    </div>
+                    <input type="range" id="sim_coincome" min="0" max="15000" step="250" value="1500" style="width:100%; accent-color:var(--info); cursor:pointer;">
+                </div>
+
+                <!-- Loan Amount Slider -->
+                <div class="form-group" style="margin-bottom: 1.25rem;">
+                    <div class="form-label">
+                        <span>Requested Loan Amount: <strong>$<span id="sim_loan_val">140</span>,000</strong></span>
+                        <span class="helper">Range: $10k - $500k</span>
+                    </div>
+                    <input type="range" id="sim_loan" min="10" max="500" step="5" value="140" style="width:100%; accent-color:var(--warning); cursor:pointer;">
+                </div>
+
+                <!-- Term Slider -->
+                <div class="form-group" style="margin-bottom: 1.25rem;">
+                    <div class="form-label">
+                        <span>Repayment Term: <strong><span id="sim_term_val">360</span> Months</strong></span>
+                        <span class="helper">Range: 60 - 480 mos</span>
+                    </div>
+                    <input type="range" id="sim_term" min="60" max="480" step="60" value="360" style="width:100%; accent-color:var(--secondary); cursor:pointer;">
+                </div>
+
+                <!-- Categorical Toggles -->
+                <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap:1rem; margin-top:1.5rem;">
+                    <div class="form-group">
+                        <label for="sim_credit" class="form-label">Credit History</label>
+                        <select id="sim_credit" class="form-control" style="font-size:0.85rem;">
+                            <option value="1.0" selected>1.0 (Prime)</option>
+                            <option value="0.0">0.0 (Defaults)</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="sim_area" class="form-label">Property Location</label>
+                        <select id="sim_area" class="form-control" style="font-size:0.85rem;">
+                            <option value="Semiurban" selected>Semiurban</option>
+                            <option value="Urban">Urban</option>
+                            <option value="Rural">Rural</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="sim_edu" class="form-label">Education</label>
+                        <select id="sim_edu" class="form-control" style="font-size:0.85rem;">
+                            <option value="Graduate" selected>Graduate</option>
+                            <option value="Not Graduate">Not Graduate</option>
+                        </select>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Real-Time Outcome Column -->
+            <div class="card" style="margin-bottom:0;">
+                <div class="card-header">
+                    <h2 class="card-title">⚡ Instant Underwriting Probability</h2>
+                    <span class="brand-badge" style="background:rgba(16,185,129,0.2); color:#34d399;">Live Reactive Engine</span>
+                </div>
+
+                <div class="result-card" style="min-height:360px;">
+                    <div style="font-size:0.9rem; text-transform:uppercase; color:#94a3b8; font-weight:700;">Simulated Verdict</div>
+                    
+                    <div id="sim-status" style="font-size:2.4rem; font-weight:900; color:#34d399; margin: 0.5rem 0;">
+                        🟢 APPROVED
+                    </div>
+
+                    <div style="width:100%; margin: 1.5rem 0;">
+                        <div style="display:flex; justify-content:space-between; font-weight:700; font-size:1.1rem; margin-bottom:0.5rem;">
+                            <span>Approval Likelihood</span>
+                            <span id="sim-score" style="color:#34d399; font-size:1.6rem; font-weight:900;">78.8%</span>
+                        </div>
+                        <div class="confidence-bar-bg" style="height:18px;">
+                            <div class="confidence-bar-fill approved" id="sim-gauge-fill" style="width: 78.8%;"></div>
+                        </div>
+                    </div>
+
+                    <div style="background:rgba(255,255,255,0.03); border:1px solid var(--border-color); border-radius:10px; padding:1.2rem; width:100%; text-align:left;">
+                        <div style="font-size:0.85rem; color:#94a3b8; margin-bottom:0.5rem; font-weight:700;">Sensitivity Observations:</div>
+                        <ul style="font-size:0.82rem; color:#cbd5e1; line-height:1.5; padding-left:1.2rem;">
+                            <li>Switching Credit History from <strong>1.0</strong> to <strong>0.0</strong> causes probability to plummet below 20%.</li>
+                            <li>Increasing loan amount past debt-to-income tolerance triggers automatic risk penalties.</li>
+                            <li>Semiurban properties provide a +10% natural approval boost over rural properties.</li>
+                        </ul>
+                    </div>
+
+                    <div class="mt-3" style="width: 100%;">
+                        <a href="/predict" class="btn btn-secondary w-full" style="justify-content: center;">
+                            Switch to Comprehensive Predictor ➔
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+    </main>
+
+    <footer class="footer">
+        <p>© 2026 CreditPulse AI • What-If Policy Sandbox • Built with Python & Scikit-Learn</p>
+    </footer>
+
+    <script src="/static/js/script.js"></script>
+</body>
+</html>
