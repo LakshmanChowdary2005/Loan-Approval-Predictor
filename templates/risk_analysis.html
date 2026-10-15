@@ -1,0 +1,202 @@
+{% extends "base.html" %}
+
+{% block title %}Financial Risk Analysis & Affordability Stress Testing | CreditPulse AI{% endblock %}
+
+{% block content %}
+<div style="margin-top: 15px; margin-bottom: 40px;">
+    <!-- Page Header -->
+    <div style="margin-bottom: 25px;">
+        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 6px;">
+            <span class="badge-tag">Solvency & Debt Capacity</span>
+            <span style="font-size: 0.85rem; color: var(--text-muted);">Risk Engineering Engine</span>
+        </div>
+        <h1 style="font-size: 2.2rem; color: var(--text-main); margin-bottom: 8px;">
+            Financial Risk Analysis & Affordability Stress Tester
+        </h1>
+        <p style="font-size: 1.05rem; color: var(--text-muted); max-width: 800px; line-height: 1.6;">
+            Interactive underwriting stress testing. Evaluate monthly EMI burdens, Debt-To-Income (DTI) exposure, and safe debt capacity with mathematically verified retail lending assumptions.
+        </p>
+    </div>
+
+    <!-- Interactive Stress Test Calculator & Live Results Grid -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 25px; margin-bottom: 30px;">
+        
+        <!-- Input Parameters Form -->
+        <div class="card" style="padding: 24px; border-radius: var(--radius-sm);">
+            <h3 style="font-size: 1.15rem; color: var(--text-main); margin-bottom: 16px; display: flex; align-items: center; gap: 8px;">
+                <span>⚙️</span> Loan Parameters for Stress Test
+            </h3>
+
+            <div style="display: flex; flex-direction: column; gap: 16px;">
+                <div>
+                    <label style="display: block; font-size: 0.85rem; color: var(--text-muted); margin-bottom: 4px;">Primary Applicant Monthly Income ($)</label>
+                    <input type="number" id="stress-app-inc" class="form-control" value="5500" min="0" step="100" style="width: 100%; padding: 10px; background: var(--bg-input); border: 1px solid var(--border-color); color: var(--text-main); border-radius: var(--radius-xs);" oninput="recalcStressTest()">
+                </div>
+                <div>
+                    <label style="display: block; font-size: 0.85rem; color: var(--text-muted); margin-bottom: 4px;">Co-Applicant Monthly Income ($)</label>
+                    <input type="number" id="stress-coapp-inc" class="form-control" value="1500" min="0" step="100" style="width: 100%; padding: 10px; background: var(--bg-input); border: 1px solid var(--border-color); color: var(--text-main); border-radius: var(--radius-xs);" oninput="recalcStressTest()">
+                </div>
+                <div>
+                    <label style="display: block; font-size: 0.85rem; color: var(--text-muted); margin-bottom: 4px;">Requested Loan Principal ($ in thousands, e.g. 150 = $150,000)</label>
+                    <input type="number" id="stress-loan-amt" class="form-control" value="140" min="10" max="600" step="5" style="width: 100%; padding: 10px; background: var(--bg-input); border: 1px solid var(--border-color); color: var(--text-main); border-radius: var(--radius-xs);" oninput="recalcStressTest()">
+                </div>
+                <div>
+                    <label style="display: block; font-size: 0.85rem; color: var(--text-muted); margin-bottom: 4px;">Repayment Term Duration (Months)</label>
+                    <select id="stress-term" class="form-control" style="width: 100%; padding: 10px; background: var(--bg-input); border: 1px solid var(--border-color); color: var(--text-main); border-radius: var(--radius-xs);" onchange="recalcStressTest()">
+                        <option value="120">120 Months (10 Years)</option>
+                        <option value="180">180 Months (15 Years)</option>
+                        <option value="240">240 Months (20 Years)</option>
+                        <option value="360" selected>360 Months (30 Years)</option>
+                        <option value="480">480 Months (40 Years)</option>
+                    </select>
+                </div>
+                <div>
+                    <label style="display: block; font-size: 0.85rem; color: var(--text-muted); margin-bottom: 4px;">Credit History Status</label>
+                    <select id="stress-credit" class="form-control" style="width: 100%; padding: 10px; background: var(--bg-input); border: 1px solid var(--border-color); color: var(--text-main); border-radius: var(--radius-xs);" onchange="recalcStressTest()">
+                        <option value="1.0" selected>1.0 - Meets Credit Guidelines (Prime)</option>
+                        <option value="0.0">0.0 - Defaulter / Unfavorable Record</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <!-- Live Stress Test Metrics Card -->
+        <div class="card" style="padding: 24px; border-radius: var(--radius-sm); display: flex; flex-direction: column; justify-content: space-between;">
+            <div>
+                <h3 style="font-size: 1.15rem; color: var(--text-main); margin-bottom: 16px; display: flex; align-items: center; gap: 8px;">
+                    <span>📈</span> Computed Debt & Affordability Ratios
+                </h3>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 20px;">
+                    <div style="background: var(--bg-secondary); padding: 14px; border-radius: var(--radius-xs); border: 1px solid var(--border-color);">
+                        <div style="font-size: 0.78rem; color: var(--text-muted);">Combined Household Income</div>
+                        <div id="disp-tot-inc" style="font-size: 1.3rem; font-weight: 700; color: #38bdf8;">$7,000.00/mo</div>
+                    </div>
+                    <div style="background: var(--bg-secondary); padding: 14px; border-radius: var(--radius-xs); border: 1px solid var(--border-color);">
+                        <div style="font-size: 0.78rem; color: var(--text-muted);">Estimated Monthly EMI</div>
+                        <div id="disp-emi" style="font-size: 1.3rem; font-weight: 700; color: #00ADB5;">$1,076.47/mo</div>
+                    </div>
+                    <div style="background: var(--bg-secondary); padding: 14px; border-radius: var(--radius-xs); border: 1px solid var(--border-color);">
+                        <div style="font-size: 0.78rem; color: var(--text-muted);">Debt-to-Income (DTI)</div>
+                        <div id="disp-dti" style="font-size: 1.3rem; font-weight: 700; color: #10B981;">15.38%</div>
+                    </div>
+                    <div style="background: var(--bg-secondary); padding: 14px; border-radius: var(--radius-xs); border: 1px solid var(--border-color);">
+                        <div style="font-size: 0.78rem; color: var(--text-muted);">Max Safe Loan (36% Cap)</div>
+                        <div id="disp-max-loan" style="font-size: 1.3rem; font-weight: 700; color: #a5b4fc;">$327,872.00</div>
+                    </div>
+                </div>
+
+                <div style="margin-bottom: 16px;">
+                    <div style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 4px;">Assessed Risk Tier:</div>
+                    <span id="disp-risk-tier" class="badge-tag" style="background: rgba(16,185,129,0.15); color: #10B981; font-size: 0.95rem; padding: 6px 14px;">
+                        LOW RISK (Comfortable Debt Cushion)
+                    </span>
+                </div>
+
+                <div id="disp-warnings" style="font-size: 0.85rem; color: #EF4444; line-height: 1.6; margin-top: 10px;">
+                    <!-- Live Warning List -->
+                </div>
+            </div>
+
+            <div style="margin-top: 20px;">
+                <a href="/predict" class="btn btn-primary" style="width: 100%; text-align: center; padding: 10px;">
+                    Apply With These Parameters ➔
+                </a>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Documented Underwriting Assumptions -->
+    <div class="card" style="padding: 24px; border-radius: var(--radius-sm); margin-bottom: 30px;">
+        <h3 style="font-size: 1.15rem; color: var(--text-main); margin-bottom: 14px;">
+            Documented Risk Calculation Methodology & Assumptions
+        </h3>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; font-size: 0.88rem; color: var(--text-muted); line-height: 1.6;">
+            <div>
+                <h4 style="color: var(--text-main); font-size: 0.92rem; margin-bottom: 4px;">Fixed Interest Rate Model</h4>
+                <p>Calculated assuming an industry-standard 8.5% annual percentage rate (APR) with monthly compounding, matching average retail mortgage rate standards.</p>
+            </div>
+            <div>
+                <h4 style="color: var(--text-main); font-size: 0.92rem; margin-bottom: 4px;">36% Safe DTI Benchmark</h4>
+                <p>Adheres to the classical 28/36 financial rule where total monthly housing and installment debt should not exceed 36% of gross household income.</p>
+            </div>
+            <div>
+                <h4 style="color: var(--text-main); font-size: 0.92rem; margin-bottom: 4px;">Standard Annuity Formula</h4>
+                <p>EMI is amortized via: <code>EMI = [P × r × (1+r)^n] / [(1+r)^n - 1]</code> where P is principal, r is monthly interest, and n is term in months.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function recalcStressTest() {
+    const appInc = parseFloat(document.getElementById('stress-app-inc').value) || 0;
+    const coappInc = parseFloat(document.getElementById('stress-coapp-inc').value) || 0;
+    const totalInc = appInc + coappInc;
+    const loanK = parseFloat(document.getElementById('stress-loan-amt').value) || 0;
+    const loanActual = loanK * 1000.0;
+    const termMonths = parseFloat(document.getElementById('stress-term').value) || 360;
+    const creditHistory = parseFloat(document.getElementById('stress-credit').value);
+
+    const annualRate = 0.085;
+    const monthlyRate = annualRate / 12.0;
+
+    let emi = 0.0;
+    if (termMonths > 0 && monthlyRate > 0) {
+        const factor = Math.pow(1.0 + monthlyRate, termMonths);
+        emi = (loanActual * monthlyRate * factor) / (factor - 1.0);
+    } else if (termMonths > 0) {
+        emi = loanActual / termMonths;
+    }
+
+    const dti = totalInc > 0 ? (emi / totalInc) * 100.0 : 100.0;
+
+    const maxSafeEmi = totalInc * 0.36;
+    let maxSafeLoan = 0.0;
+    if (termMonths > 0 && monthlyRate > 0) {
+        const factor = Math.pow(1.0 + monthlyRate, termMonths);
+        maxSafeLoan = (maxSafeEmi * (factor - 1.0)) / (monthlyRate * factor);
+    }
+
+    document.getElementById('disp-tot-inc').innerText = '$' + totalInc.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) + '/mo';
+    document.getElementById('disp-emi').innerText = '$' + emi.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) + '/mo';
+    document.getElementById('disp-dti').innerText = dti.toFixed(2) + '%';
+    document.getElementById('disp-max-loan').innerText = '$' + maxSafeLoan.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+
+    const tierEl = document.getElementById('disp-risk-tier');
+    const warnEl = document.getElementById('disp-warnings');
+    let warnings = [];
+
+    if (creditHistory !== 1.0) {
+        warnings.push('• High Risk: Historical credit default trail detected.');
+    }
+    if (dti > 43.0) {
+        warnings.push('• Elevated DTI: Monthly debt installment consumes >43% of household income.');
+    } else if (dti > 36.0) {
+        warnings.push('• Moderate DTI: Installment between 36% and 43% indicates tighter debt capacity.');
+    }
+    if (loanActual > maxSafeLoan) {
+        const excess = loanActual - maxSafeLoan;
+        warnings.push('• Capacity Exceeded: Requested loan exceeds safe borrowing threshold by $' + excess.toLocaleString(undefined, {maximumFractionDigits: 0}) + '.');
+    }
+
+    if (creditHistory === 1.0 && dti <= 36.0 && totalInc >= 3000) {
+        tierEl.innerText = 'LOW RISK (Favorable Debt Solvency)';
+        tierEl.style.background = 'rgba(16,185,129,0.15)';
+        tierEl.style.color = '#10B981';
+    } else if (creditHistory === 1.0 && dti <= 43.0) {
+        tierEl.innerText = 'MODERATE RISK (Acceptable Debt Service)';
+        tierEl.style.background = 'rgba(245,158,11,0.15)';
+        tierEl.style.color = '#F59E0B';
+    } else {
+        tierEl.innerText = 'HIGH RISK (Debt Stress / Credit Vulnerability)';
+        tierEl.style.background = 'rgba(239,68,68,0.15)';
+        tierEl.style.color = '#EF4444';
+    }
+
+    warnEl.innerHTML = warnings.join('<br>');
+}
+document.addEventListener('DOMContentLoaded', recalcStressTest);
+</script>
+{% endblock %}

@@ -1,0 +1,167 @@
+{% extends "base.html" %}
+
+{% block title %}About System Architecture & Project Documentation | CreditPulse AI{% endblock %}
+
+{% block content %}
+<div style="margin-top: 15px; margin-bottom: 50px;">
+    <!-- Page Header -->
+    <div style="margin-bottom: 25px;">
+        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 6px;">
+            <span class="badge-tag">ShadowFox Internship Task</span>
+            <span style="font-size: 0.85rem; color: var(--text-muted);">Architecture & Technical Specs</span>
+        </div>
+        <h1 style="font-size: 2.2rem; color: var(--text-main); margin-bottom: 8px;">
+            About CreditPulse AI System Architecture
+        </h1>
+        <p style="font-size: 1.05rem; color: var(--text-muted); max-width: 850px; line-height: 1.6;">
+            A full-stack, enterprise-grade Machine Learning Underwriting and Financial Risk Analysis platform engineered for the ShadowFox intermediate internship task.
+        </p>
+    </div>
+
+    <!-- 2 Column Overview -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); gap: 25px; margin-bottom: 30px;">
+        
+        <!-- Objective & Core Competencies -->
+        <div class="card" style="padding: 24px; border-radius: var(--radius-sm);">
+            <h3 style="font-size: 1.15rem; color: var(--text-main); margin-bottom: 14px; display: flex; align-items: center; gap: 8px;">
+                <span>🎯</span> Project Scope & Engineering Deliverables
+            </h3>
+            <ul style="font-size: 0.9rem; color: var(--text-muted); padding-left: 20px; line-height: 1.8;">
+                <li><strong>Supervised Machine Learning:</strong> End-to-end training and evaluation of 5 classification models (Random Forest, Logistic Regression, Decision Tree, Gradient Boosting, Extra Trees).</li>
+                <li><strong>Anti-Leakage Preprocessing:</strong> Stratified 80/20 train/test splits, median & mode imputation, StandardScaler, and OneHotEncoder encapsulated in reproducible Scikit-Learn pipelines.</li>
+                <li><strong>Explainable AI (SHAP):</strong> Transparent tree feature attributions delivering both global significance rankings and local per-applicant waterfall decision explanations.</li>
+                <li><strong>Debt Affordability Stress Testing:</strong> Mathematical amortization, Debt-To-Income (DTI) computation, and safe borrowing capacity guidelines.</li>
+                <li><strong>Auditable Data Persistence:</strong> Transactional SQLite audit logging storing every prediction ID, timestamp, and feature vector.</li>
+                <li><strong>Institutional Reports:</strong> Automated PDF underwriting memos via ReportLab and formatted Excel workbooks via OpenPyXL.</li>
+            </ul>
+        </div>
+
+        <!-- Tech Stack Card -->
+        <div class="card" style="padding: 24px; border-radius: var(--radius-sm);">
+            <h3 style="font-size: 1.15rem; color: var(--text-main); margin-bottom: 14px; display: flex; align-items: center; gap: 8px;">
+                <span>💻</span> Production Technology Stack
+            </h3>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; font-size: 0.88rem;">
+                <div style="background: var(--bg-secondary); padding: 12px; border-radius: var(--radius-xs); border: 1px solid var(--border-color);">
+                    <div style="color: #38bdf8; font-weight: 700; margin-bottom: 4px;">Backend & Web</div>
+                    <div style="color: var(--text-muted);">Python, Flask 3.0, SQLite3, Pytest</div>
+                </div>
+                <div style="background: var(--bg-secondary); padding: 12px; border-radius: var(--radius-xs); border: 1px solid var(--border-color);">
+                    <div style="color: #10B981; font-weight: 700; margin-bottom: 4px;">Machine Learning</div>
+                    <div style="color: var(--text-muted);">Scikit-Learn, Pandas, NumPy, Joblib</div>
+                </div>
+                <div style="background: var(--bg-secondary); padding: 12px; border-radius: var(--radius-xs); border: 1px solid var(--border-color);">
+                    <div style="color: #00ADB5; font-weight: 700; margin-bottom: 4px;">Explainability & XAI</div>
+                    <div style="color: var(--text-muted);">SHAP (TreeExplainer), Permutations</div>
+                </div>
+                <div style="background: var(--bg-secondary); padding: 12px; border-radius: var(--radius-xs); border: 1px solid var(--border-color);">
+                    <div style="color: #f59e0b; font-weight: 700; margin-bottom: 4px;">Reporting Engines</div>
+                    <div style="color: var(--text-muted);">ReportLab (PDF), OpenPyXL (Excel)</div>
+                </div>
+                <div style="background: var(--bg-secondary); padding: 12px; border-radius: var(--radius-xs); border: 1px solid var(--border-color);">
+                    <div style="color: #a5b4fc; font-weight: 700; margin-bottom: 4px;">Frontend Architecture</div>
+                    <div style="color: var(--text-muted);">HTML5, Vanilla CSS3, JavaScript, Web Audio</div>
+                </div>
+                <div style="background: var(--bg-secondary); padding: 12px; border-radius: var(--radius-xs); border: 1px solid var(--border-color);">
+                    <div style="color: #f43f5e; font-weight: 700; margin-bottom: 4px;">Container & Deployment</div>
+                    <div style="color: var(--text-muted);">Docker, Docker Compose, Gunicorn</div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Dataset Schema Documentation -->
+    <div class="card" style="padding: 24px; border-radius: var(--radius-sm); margin-bottom: 30px;">
+        <h3 style="font-size: 1.15rem; color: var(--text-main); margin-bottom: 14px;">
+            Dataset Schema & Feature Specification (614 Observations)
+        </h3>
+        <div class="table-responsive">
+            <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.88rem;">
+                <thead style="background: var(--bg-secondary); border-bottom: 1px solid var(--border-color); color: var(--text-muted);">
+                    <tr>
+                        <th style="padding: 10px 14px;">Feature Name</th>
+                        <th style="padding: 10px 14px;">Type</th>
+                        <th style="padding: 10px 14px;">Domain / Values</th>
+                        <th style="padding: 10px 14px;">Underwriting Description</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr style="border-bottom: 1px solid var(--border-color);">
+                        <td style="padding: 10px 14px; font-weight: 600;">Loan_ID</td>
+                        <td style="padding: 10px 14px; color: var(--text-dim);">String</td>
+                        <td style="padding: 10px 14px;">LP001002 - LP002996</td>
+                        <td style="padding: 10px 14px; color: var(--text-muted);">Unique historical loan application identification key.</td>
+                    </tr>
+                    <tr style="border-bottom: 1px solid var(--border-color);">
+                        <td style="padding: 10px 14px; font-weight: 600;">Gender</td>
+                        <td style="padding: 10px 14px; color: var(--text-dim);">Categorical</td>
+                        <td style="padding: 10px 14px;">Male, Female</td>
+                        <td style="padding: 10px 14px; color: var(--text-muted);">Applicant biological gender (monitored for fair lending equity).</td>
+                    </tr>
+                    <tr style="border-bottom: 1px solid var(--border-color);">
+                        <td style="padding: 10px 14px; font-weight: 600;">Married</td>
+                        <td style="padding: 10px 14px; color: var(--text-dim);">Categorical</td>
+                        <td style="padding: 10px 14px;">Yes, No</td>
+                        <td style="padding: 10px 14px; color: var(--text-muted);">Marital status indicating household economic structure.</td>
+                    </tr>
+                    <tr style="border-bottom: 1px solid var(--border-color);">
+                        <td style="padding: 10px 14px; font-weight: 600;">Dependents</td>
+                        <td style="padding: 10px 14px; color: var(--text-dim);">Categorical</td>
+                        <td style="padding: 10px 14px;">0, 1, 2, 3+</td>
+                        <td style="padding: 10px 14px; color: var(--text-muted);">Number of financially dependent household members.</td>
+                    </tr>
+                    <tr style="border-bottom: 1px solid var(--border-color);">
+                        <td style="padding: 10px 14px; font-weight: 600;">Education</td>
+                        <td style="padding: 10px 14px; color: var(--text-dim);">Categorical</td>
+                        <td style="padding: 10px 14px;">Graduate, Not Graduate</td>
+                        <td style="padding: 10px 14px; color: var(--text-muted);">Educational qualification attainment level.</td>
+                    </tr>
+                    <tr style="border-bottom: 1px solid var(--border-color);">
+                        <td style="padding: 10px 14px; font-weight: 600;">ApplicantIncome</td>
+                        <td style="padding: 10px 14px; color: var(--text-dim);">Numeric ($)</td>
+                        <td style="padding: 10px 14px;">150 - 81,000</td>
+                        <td style="padding: 10px 14px; color: var(--text-muted);">Gross monthly primary applicant earnings.</td>
+                    </tr>
+                    <tr style="border-bottom: 1px solid var(--border-color);">
+                        <td style="padding: 10px 14px; font-weight: 600;">CoapplicantIncome</td>
+                        <td style="padding: 10px 14px; color: var(--text-dim);">Numeric ($)</td>
+                        <td style="padding: 10px 14px;">0 - 41,667</td>
+                        <td style="padding: 10px 14px; color: var(--text-muted);">Gross monthly co-borrower financial contribution.</td>
+                    </tr>
+                    <tr style="border-bottom: 1px solid var(--border-color);">
+                        <td style="padding: 10px 14px; font-weight: 600;">LoanAmount</td>
+                        <td style="padding: 10px 14px; color: var(--text-dim);">Numeric ($k)</td>
+                        <td style="padding: 10px 14px;">9 - 700</td>
+                        <td style="padding: 10px 14px; color: var(--text-muted);">Requested credit principal in thousands ($000s).</td>
+                    </tr>
+                    <tr style="border-bottom: 1px solid var(--border-color);">
+                        <td style="padding: 10px 14px; font-weight: 600;">Loan_Amount_Term</td>
+                        <td style="padding: 10px 14px; color: var(--text-dim);">Numeric (Months)</td>
+                        <td style="padding: 10px 14px;">12 - 480</td>
+                        <td style="padding: 10px 14px; color: var(--text-muted);">Amortizing repayment schedule duration in months.</td>
+                    </tr>
+                    <tr style="border-bottom: 1px solid var(--border-color);">
+                        <td style="padding: 10px 14px; font-weight: 600;">Credit_History</td>
+                        <td style="padding: 10px 14px; color: var(--text-dim);">Binary Numeric</td>
+                        <td style="padding: 10px 14px;">1.0 (Good), 0.0 (Bad)</td>
+                        <td style="padding: 10px 14px; color: var(--text-muted);">Primary credit rating indicator: zero past defaults vs adverse records.</td>
+                    </tr>
+                    <tr style="border-bottom: 1px solid var(--border-color);">
+                        <td style="padding: 10px 14px; font-weight: 600;">Property_Area</td>
+                        <td style="padding: 10px 14px; color: var(--text-dim);">Categorical</td>
+                        <td style="padding: 10px 14px;">Urban, Semiurban, Rural</td>
+                        <td style="padding: 10px 14px; color: var(--text-muted);">Geographical location category of mortgaged property asset.</td>
+                    </tr>
+                    <tr style="border-bottom: 1px solid var(--border-color);">
+                        <td style="padding: 10px 14px; font-weight: 600; color: #10B981;">Loan_Status (Target)</td>
+                        <td style="padding: 10px 14px; color: var(--text-dim);">Binary Target</td>
+                        <td style="padding: 10px 14px;">Y (Approved: 68.7%), N (Rejected: 31.3%)</td>
+                        <td style="padding: 10px 14px; color: var(--text-muted);">Ground-truth institutional underwriting decision.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

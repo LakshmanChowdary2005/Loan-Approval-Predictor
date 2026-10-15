@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+
+{% block title %}Explainable AI (XAI) & SHAP Attributions | CreditPulse AI{% endblock %}
+
+{% block content %}
+<div style="margin-top: 15px; margin-bottom: 40px;">
+    <!-- Page Header -->
+    <div style="margin-bottom: 25px;">
+        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 6px;">
+            <span class="badge-tag">Transparency & Governance</span>
+            <span style="font-size: 0.85rem; color: var(--text-muted);">Explainable AI Subsystem</span>
+        </div>
+        <h1 style="font-size: 2.2rem; color: var(--text-main); margin-bottom: 8px;">
+            Explainable AI (XAI) & Decision Intelligence
+        </h1>
+        <p style="font-size: 1.05rem; color: var(--text-muted); max-width: 800px; line-height: 1.6;">
+            Demystifying machine learning predictions with SHAP (SHapley Additive exPlanations) and global feature attributions. Understand precisely which factors influence credit approval outcomes.
+        </p>
+    </div>
+
+    <!-- 2 Column Layout: Global Importance & Explanation Theory -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); gap: 25px; margin-bottom: 30px;">
+        
+        <!-- Global Feature Importance Table -->
+        <div class="card" style="padding: 24px; border-radius: var(--radius-sm);">
+            <h3 style="font-size: 1.15rem; color: var(--text-main); margin-bottom: 16px; display: flex; align-items: center; gap: 8px;">
+                <span>📊</span> Global Feature Importance (Random Forest)
+            </h3>
+            <p style="font-size: 0.88rem; color: var(--text-muted); margin-bottom: 16px;">
+                Relative statistical contribution of each feature in determining loan approval across all 614 historical loan applications.
+            </p>
+
+            <div style="display: flex; flex-direction: column; gap: 14px;">
+                {% if metadata and metadata.feature_importance %}
+                    {% for item in metadata.feature_importance %}
+                    <div>
+                        <div style="display: flex; justify-content: space-between; font-size: 0.88rem; margin-bottom: 4px;">
+                            <span style="color: var(--text-main); font-weight: 500;">{{ item.feature }}</span>
+                            <span style="color: #00ADB5; font-weight: 700;">{{ item.importance }}%</span>
+                        </div>
+                        <div style="width: 100%; height: 8px; background: var(--bg-secondary); border-radius: 999px; overflow: hidden;">
+                            <div style="width: {{ item.importance }}%; height: 100%; background: linear-gradient(90deg, #00ADB5, #6366f1); border-radius: 999px;"></div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <p style="color: var(--text-muted);">Feature importance metadata is currently being generated.</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- How SHAP Works & Regulatory Fair Lending Principles -->
+        <div class="card" style="padding: 24px; border-radius: var(--radius-sm); display: flex; flex-direction: column; justify-content: space-between;">
+            <div>
+                <h3 style="font-size: 1.15rem; color: var(--text-main); margin-bottom: 16px; display: flex; align-items: center; gap: 8px;">
+                    <span>🛡️</span> Algorithmic Accountability & Methodology
+                </h3>
+                
+                <div style="margin-bottom: 18px; line-height: 1.6; font-size: 0.9rem; color: var(--text-muted);">
+                    <h4 style="color: var(--text-main); font-size: 0.95rem; margin-bottom: 6px;">Shapley Additive exPlanations (SHAP)</h4>
+                    <p>
+                        SHAP connects cooperative game theory with optimal credit decision attributions. By evaluating all possible feature coalitions, it assigns each feature an exact marginal contribution toward shifting the applicant's likelihood of approval above or below the baseline dataset average.
+                    </p>
+                </div>
+
+                <div style="margin-bottom: 18px; line-height: 1.6; font-size: 0.9rem; color: var(--text-muted);">
+                    <h4 style="color: var(--text-main); font-size: 0.95rem; margin-bottom: 6px;">Key Explanatory Principles</h4>
+                    <ul style="padding-left: 18px; line-height: 1.8;">
+                        <li><strong>Credit History Dominance:</strong> Accounts for ~45% of total predictive weight. Prime credit history (1.0) is the single most vital positive driver.</li>
+                        <li><strong>Household Solvency Cushion:</strong> Combined applicant & co-applicant earnings mitigate high loan commitments.</li>
+                        <li><strong>Asset Location Demographics:</strong> Semiurban collateral demonstrates high historical clearance rates.</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div style="background: rgba(0, 173, 181, 0.08); border: 1px solid rgba(0, 173, 181, 0.25); border-radius: var(--radius-xs); padding: 14px; font-size: 0.85rem; color: var(--text-dim);">
+                <strong>Statutory Fair Lending Notice:</strong> In compliance with the Equal Credit Opportunity Act (ECOA) and Consumer Financial Protection Bureau (CFPB) guidance, automated underwriters must provide adverse action notices citing exact statistical factors rather than opaque black-box outcomes.
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Static EDA Feature Importance Visual Artifact -->
+    <div class="card" style="padding: 24px; border-radius: var(--radius-sm); margin-bottom: 30px;">
+        <h3 style="font-size: 1.15rem; color: var(--text-main); margin-bottom: 16px;">
+            Diagnostic Feature Attribution Visualizations
+        </h3>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px;">
+            <div style="text-align: center; background: var(--bg-secondary); border-radius: var(--radius-sm); padding: 15px; border: 1px solid var(--border-color);">
+                <img src="/static/images/eda/feature_importance_bar.png" alt="Feature Importance Plot" style="max-width: 100%; border-radius: var(--radius-xs); max-height: 340px; object-fit: contain;">
+                <div style="margin-top: 10px; font-size: 0.82rem; color: var(--text-muted);">Figure 1: Random Forest Feature Importances (%)</div>
+            </div>
+            <div style="text-align: center; background: var(--bg-secondary); border-radius: var(--radius-sm); padding: 15px; border: 1px solid var(--border-color);">
+                <img src="/static/images/eda/credit_history_vs_approval.png" alt="Credit History vs Approval Plot" style="max-width: 100%; border-radius: var(--radius-xs); max-height: 340px; object-fit: contain;">
+                <div style="margin-top: 10px; font-size: 0.82rem; color: var(--text-muted);">Figure 2: Empirical Credit History vs Loan Clearance</div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

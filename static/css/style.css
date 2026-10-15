@@ -1029,3 +1029,39 @@ h1, h2, h3, h4, h5, h6 {
 @keyframes spin {
   to { transform: rotate(360deg); }
 }
+
+/* TOP NAV DROPDOWN */
+.top-nav-dropdown {
+  position: relative;
+  display: inline-block;
+}
+.dropdown-menu-custom {
+  display: none;
+  position: absolute;
+  top: 100%;
+  left: 0;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  padding: 6px 0;
+  min-width: 200px;
+  box-shadow: var(--shadow-card);
+  backdrop-filter: blur(16px);
+  z-index: 1000;
+}
+.top-nav-dropdown:hover .dropdown-menu-custom {
+  display: block !important;
+}
+.dropdown-menu-custom a {
+  display: block;
+  padding: 8px 16px;
+  color: var(--text-main);
+  text-decoration: none;
+  font-size: 0.88rem;
+  transition: var(--transition);
+}
+.dropdown-menu-custom a:hover {
+  background: rgba(0, 173, 181, 0.15);
+  color: #00ADB5;
+}
+

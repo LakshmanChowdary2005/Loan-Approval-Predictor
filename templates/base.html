@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}CreditPulse AI | Loan Approval & Risk Analysis Platform{% endblock %}</title>
+    <meta name="description" content="AI-Powered Loan Approval Prediction & Financial Risk Analysis System. Enterprise ML decision support with SHAP explainability and debt stress testing.">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Chart.js & Plotly -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+    <!-- Stylesheet -->
+    <link rel="stylesheet" href="/static/css/style.css">
+    <style>
+        :root {
+            --brand-navy: #0B192C;
+            --brand-navy-light: #1E3E62;
+            --brand-teal: #00ADB5;
+            --brand-teal-glow: rgba(0, 173, 181, 0.35);
+        }
+        .nav-brand .brand-icon {
+            background: linear-gradient(135deg, #00ADB5, #6366f1);
+            color: #fff;
+        }
+        .brand-badge {
+            background: rgba(0, 173, 181, 0.2);
+            color: #00ADB5;
+            border: 1px solid rgba(0, 173, 181, 0.4);
+        }
+        .btn-teal {
+            background: #00ADB5;
+            color: #fff;
+            border: none;
+            box-shadow: 0 4px 15px var(--brand-teal-glow);
+        }
+        .btn-teal:hover {
+            background: #00939a;
+            color: #fff;
+        }
+        .top-nav-dropdown {
+            position: relative;
+            display: inline-block;
+        }
+        .dropdown-menu-custom {
+            display: none;
+            position: absolute;
+            top: 100%;
+            left: 0;
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            padding: 8px 0;
+            min-width: 190px;
+            box-shadow: var(--shadow-card);
+            backdrop-filter: blur(16px);
+            z-index: 1000;
+        }
+        .top-nav-dropdown:hover .dropdown-menu-custom {
+            display: block;
+        }
+        .dropdown-menu-custom a {
+            display: block;
+            padding: 8px 16px;
+            color: var(--text-main);
+            text-decoration: none;
+            font-size: 0.9rem;
+            transition: var(--transition);
+        }
+        .dropdown-menu-custom a:hover {
+            background: rgba(0, 173, 181, 0.15);
+            color: var(--brand-teal);
+        }
+        .badge-status-approved {
+            background: rgba(16, 185, 129, 0.15);
+            color: #10B981;
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            padding: 4px 10px;
+            border-radius: 999px;
+            font-weight: 600;
+        }
+        .badge-status-rejected {
+            background: rgba(239, 68, 68, 0.15);
+            color: #EF4444;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            padding: 4px 10px;
+            border-radius: 999px;
+            font-weight: 600;
+        }
+        .table-responsive {
+            overflow-x: auto;
+            width: 100%;
+        }
+        .alert-box {
+            padding: 12px 18px;
+            border-radius: var(--radius-sm);
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .alert-success { background: rgba(16, 185, 129, 0.15); border: 1px solid #10B981; color: #34d399; }
+        .alert-danger { background: rgba(239, 68, 68, 0.15); border: 1px solid #EF4444; color: #f87171; }
+        .alert-info { background: rgba(6, 182, 212, 0.15); border: 1px solid #06b6d4; color: #38bdf8; }
+    </style>
+    {% block extra_head %}{% endblock %}
+</head>
+<body>
+
+    <!-- Top Status Ticker -->
+    <div class="top-ticker" id="top-status-ticker">
+        <div class="ticker-item">
+            <span class="status-dot"></span>
+            <span><strong>CreditPulse AI Underwriting Engine Active</strong> • Scikit-Learn Supervised Pipeline</span>
+        </div>
+        <div style="display: flex; gap: 1.5rem; align-items: center;">
+            <div class="ticker-item"><span>CV Benchmark:</span> <strong style="color: #34d399;">79.6%</strong></div>
+            <div class="ticker-item"><span>Test Set Accuracy:</span> <strong style="color: #00ADB5;">86.2%</strong></div>
+            <div class="ticker-item"><span>Models:</span> <strong>5 Algorithms</strong></div>
+        </div>
+    </div>
+
+    <!-- Navigation Header -->
+    <nav class="navbar" id="main-navbar">
+        <a href="/" class="nav-brand" id="brand-link">
+            <div class="brand-icon">🏛️</div>
+            <div>
+                <span>CreditPulse AI</span>
+                <span class="brand-badge">Fintech Underwriting</span>
+            </div>
+        </a>
+
+        <ul class="nav-links">
+            <li><a href="/" class="nav-link {% if request.path == '/' %}active{% endif %}" id="nav-home">Home</a></li>
+            <li><a href="/dashboard" class="nav-link {% if request.path == '/dashboard' %}active{% endif %}" id="nav-dashboard">Dashboard</a></li>
+            <li><a href="/predict" class="nav-link {% if request.path == '/predict' %}active{% endif %}" id="nav-predict">Predictor</a></li>
+            <li class="top-nav-dropdown">
+                <a href="#" class="nav-link {% if request.path in ['/explainability', '/risk-analysis', '/simulator', '/batch'] %}active{% endif %}">
+                    Analytics & Tools ▾
+                </a>
+                <div class="dropdown-menu-custom">
+                    <a href="/explainability">🔍 Explainable AI (SHAP)</a>
+                    <a href="/risk-analysis">📊 Financial Risk Analysis</a>
+                    <a href="/simulator">🎛️ What-If Simulator</a>
+                    <a href="/batch">📁 Batch CSV Scoring</a>
+                </div>
+            </li>
+            <li><a href="/history" class="nav-link {% if request.path == '/history' %}active{% endif %}" id="nav-history">History</a></li>
+            <li><a href="/model-performance" class="nav-link {% if request.path == '/model-performance' %}active{% endif %}" id="nav-perf">Model & Fairness</a></li>
+            <li><a href="/reports" class="nav-link {% if request.path == '/reports' %}active{% endif %}" id="nav-reports">Reports</a></li>
+            <li><a href="/about" class="nav-link {% if request.path == '/about' %}active{% endif %}" id="nav-about">About</a></li>
+        </ul>
+
+        <!-- Controls: Sound & Theme & Auth -->
+        <div class="nav-controls">
+            <button type="button" class="btn-icon" id="sound-toggle-btn" title="Toggle Sound Feedback">🔊</button>
+            <button type="button" class="btn-icon" id="theme-toggle-btn" title="Toggle Theme">🌙</button>
+            {% if session.get('user') %}
+                <span style="font-size: 0.85rem; color: var(--text-muted); margin-right: 4px;">👤 {{ session.get('user') }}</span>
+                <a href="/logout" class="btn btn-secondary" style="padding: 6px 12px; font-size: 0.82rem;">Logout</a>
+            {% else %}
+                <a href="/login" class="btn btn-secondary" style="padding: 6px 12px; font-size: 0.82rem;">Login</a>
+            {% endif %}
+            <a href="/predict" class="btn btn-primary btn-nav" id="nav-launch-btn">Apply Now ➔</a>
+        </div>
+    </nav>
+
+    <!-- Flash Messages Container -->
+    <div class="container" style="padding-top: 15px;">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert-box alert-{{ category }}">
+                        <span>{{ message }}</span>
+                        <button type="button" style="background: none; border: none; color: inherit; cursor: pointer; font-size: 1.1rem;" onclick="this.parentElement.remove();">×</button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+    </div>
+
+    <!-- Main Content Container -->
+    <main class="container" id="main-container">
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Global Footer -->
+    <footer style="margin-top: 60px; border-top: 1px solid var(--border-color); background: var(--bg-secondary); padding: 40px 0 24px;">
+        <div class="container" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 30px; margin-bottom: 30px;">
+            <div>
+                <h4 style="color: var(--text-main); margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+                    <span>🏛️</span> CreditPulse AI
+                </h4>
+                <p style="font-size: 0.88rem; color: var(--text-muted); line-height: 1.6;">
+                    Enterprise AI-Powered Loan Approval Prediction & Financial Risk Analysis System built for the ShadowFox intermediate internship task.
+                </p>
+            </div>
+            <div>
+                <h5 style="color: var(--text-main); margin-bottom: 12px; font-size: 0.95rem;">Underwriting Modules</h5>
+                <ul style="list-style: none; font-size: 0.88rem; line-height: 2;">
+                    <li><a href="/predict" style="color: var(--text-muted); text-decoration: none;">Single Application Underwriting</a></li>
+                    <li><a href="/simulator" style="color: var(--text-muted); text-decoration: none;">What-If Sensitivity Simulator</a></li>
+                    <li><a href="/batch" style="color: var(--text-muted); text-decoration: none;">Bulk Batch CSV Scoring</a></li>
+                    <li><a href="/risk-analysis" style="color: var(--text-muted); text-decoration: none;">Debt-To-Income (DTI) Stress Testing</a></li>
+                </ul>
+            </div>
+            <div>
+                <h5 style="color: var(--text-main); margin-bottom: 12px; font-size: 0.95rem;">Governance & Metrics</h5>
+                <ul style="list-style: none; font-size: 0.88rem; line-height: 2;">
+                    <li><a href="/explainability" style="color: var(--text-muted); text-decoration: none;">SHAP Feature Attributions</a></li>
+                    <li><a href="/model-performance" style="color: var(--text-muted); text-decoration: none;">Subgroup Fairness Evaluation</a></li>
+                    <li><a href="/reports" style="color: var(--text-muted); text-decoration: none;">PDF & Excel Report Exports</a></li>
+                    <li><a href="/history" style="color: var(--text-muted); text-decoration: none;">Audit Trail Database</a></li>
+                </ul>
+            </div>
+            <div>
+                <h5 style="color: var(--text-main); margin-bottom: 12px; font-size: 0.95rem;">Regulatory Disclosure</h5>
+                <p style="font-size: 0.8rem; color: var(--text-dim); line-height: 1.5;">
+                    Automated outputs provide statistical decision-support. Predictions represent probabilistic estimates and do not constitute a legal commitment to lend or a verified credit score.
+                </p>
+            </div>
+        </div>
+        <div class="container" style="border-top: 1px solid var(--border-color); padding-top: 15px; display: flex; justify-content: space-between; align-items: center; font-size: 0.8rem; color: var(--text-dim);">
+            <div>© 2026 CreditPulse AI • ShadowFox Intermediate Internship Task</div>
+            <div>Version 2.4.0 • Built with Flask, Scikit-Learn, SHAP, ReportLab</div>
+        </div>
+    </footer>
+
+    <!-- Scripts -->
+    <script src="/static/js/script.js"></script>
+    {% block extra_scripts %}{% endblock %}
+</body>
+</html>

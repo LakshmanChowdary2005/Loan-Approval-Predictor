@@ -1,0 +1,153 @@
+{% extends "base.html" %}
+
+{% block title %}Application History & Audit Log | CreditPulse AI{% endblock %}
+
+{% block content %}
+<div style="margin-top: 15px; margin-bottom: 40px;">
+    <!-- Page Header & Action Bar -->
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; margin-bottom: 25px;">
+        <div>
+            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 6px;">
+                <span class="badge-tag">SQLite Persistent Store</span>
+                <span style="font-size: 0.85rem; color: var(--text-muted);">Underwriting Audit Trail</span>
+            </div>
+            <h1 style="font-size: 2.2rem; color: var(--text-main); margin-bottom: 4px;">
+                Application History & Decision Logs
+            </h1>
+            <p style="font-size: 1rem; color: var(--text-muted);">
+                Auditable log of all real-time single and batch predictions processed by the system.
+            </p>
+        </div>
+        <div style="display: flex; gap: 10px;">
+            <a href="/export/history-csv" class="btn btn-secondary" style="font-size: 0.88rem; padding: 8px 16px;">📥 Export CSV</a>
+            <a href="/export/history-excel" class="btn btn-secondary" style="font-size: 0.88rem; padding: 8px 16px;">📊 Export Excel</a>
+            <a href="/predict" class="btn btn-primary" style="font-size: 0.88rem; padding: 8px 16px;">+ New Prediction</a>
+        </div>
+    </div>
+
+    <!-- KPI Summary Cards -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 25px;">
+        <div class="card" style="padding: 18px; border-radius: var(--radius-sm);">
+            <div style="font-size: 0.8rem; color: var(--text-muted);">Total Historical Inquiries</div>
+            <div style="font-size: 1.8rem; font-weight: 800; color: #38bdf8; margin-top: 4px;">{{ analytics.total_predictions }}</div>
+        </div>
+        <div class="card" style="padding: 18px; border-radius: var(--radius-sm);">
+            <div style="font-size: 0.8rem; color: var(--text-muted);">Predicted Approved</div>
+            <div style="font-size: 1.8rem; font-weight: 800; color: #10B981; margin-top: 4px;">{{ analytics.approved_count }} ({{ analytics.approval_rate }}%)</div>
+        </div>
+        <div class="card" style="padding: 18px; border-radius: var(--radius-sm);">
+            <div style="font-size: 0.8rem; color: var(--text-muted);">Predicted Rejected</div>
+            <div style="font-size: 1.8rem; font-weight: 800; color: #EF4444; margin-top: 4px;">{{ analytics.rejected_count }} ({{ analytics.rejection_rate }}%)</div>
+        </div>
+        <div class="card" style="padding: 18px; border-radius: var(--radius-sm);">
+            <div style="font-size: 0.8rem; color: var(--text-muted);">Average Applicant Income</div>
+            <div style="font-size: 1.8rem; font-weight: 800; color: #a5b4fc; margin-top: 4px;">${{ "{:,.0f}".format(analytics.avg_income|float) }}</div>
+        </div>
+        <div class="card" style="padding: 18px; border-radius: var(--radius-sm);">
+            <div style="font-size: 0.8rem; color: var(--text-muted);">Average Loan Requested</div>
+            <div style="font-size: 1.8rem; font-weight: 800; color: #f59e0b; margin-top: 4px;">${{ "{:,.0f}".format(analytics.avg_loan|float * 1000) }}</div>
+        </div>
+    </div>
+
+    <!-- Search & Filter Controls -->
+    <div class="card" style="padding: 16px 20px; border-radius: var(--radius-sm); margin-bottom: 20px;">
+        <form method="GET" action="/history" style="display: flex; gap: 15px; flex-wrap: wrap; align-items: center;">
+            <div style="flex: 1; min-width: 220px;">
+                <input type="text" name="search" class="form-control" placeholder="Search by Prediction ID, Education, Property Area..." value="{{ search_term }}" style="width: 100%; padding: 8px 14px; background: var(--bg-input); border: 1px solid var(--border-color); color: var(--text-main); border-radius: var(--radius-xs);">
+            </div>
+            <div>
+                <select name="status" class="form-control" style="padding: 8px 14px; background: var(--bg-input); border: 1px solid var(--border-color); color: var(--text-main); border-radius: var(--radius-xs);">
+                    <option value="all" {% if status_filter == 'all' %}selected{% endif %}>All Decisions</option>
+                    <option value="approved" {% if status_filter == 'approved' %}selected{% endif %}>Approved Only</option>
+                    <option value="rejected" {% if status_filter == 'rejected' %}selected{% endif %}>Rejected Only</option>
+                </select>
+            </div>
+            <button type="submit" class="btn btn-primary" style="padding: 8px 18px; font-size: 0.88rem;">Filter Records</button>
+            {% if search_term or status_filter != 'all' %}
+                <a href="/history" class="btn btn-secondary" style="padding: 8px 14px; font-size: 0.88rem;">Reset</a>
+            {% endif %}
+        </form>
+    </div>
+
+    <!-- Records Table -->
+    <div class="card" style="border-radius: var(--radius-sm); overflow: hidden;">
+        <div class="table-responsive">
+            <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.88rem;">
+                <thead style="background: var(--bg-secondary); border-bottom: 1px solid var(--border-color); color: var(--text-muted); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.5px;">
+                    <tr>
+                        <th style="padding: 14px 16px;">Application ID</th>
+                        <th style="padding: 14px 16px;">Timestamp</th>
+                        <th style="padding: 14px 16px;">Income</th>
+                        <th style="padding: 14px 16px;">Requested Loan</th>
+                        <th style="padding: 14px 16px;">Credit History</th>
+                        <th style="padding: 14px 16px;">Decision</th>
+                        <th style="padding: 14px 16px;">Confidence</th>
+                        <th style="padding: 14px 16px;">Model</th>
+                        <th style="padding: 14px 16px; text-align: right;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for rec in records %}
+                    <tr style="border-bottom: 1px solid var(--border-color); transition: var(--transition);">
+                        <td style="padding: 12px 16px; font-weight: 600; color: var(--text-main);">
+                            <a href="/results/{{ rec.prediction_id }}" style="color: var(--primary); text-decoration: none;">
+                                {{ rec.prediction_id }}
+                            </a>
+                        </td>
+                        <td style="padding: 12px 16px; color: var(--text-dim); font-size: 0.82rem;">
+                            {{ rec.timestamp }}
+                        </td>
+                        <td style="padding: 12px 16px; color: var(--text-main);">
+                            ${{ "{:,.0f}".format(rec.applicant_income|float) }}
+                        </td>
+                        <td style="padding: 12px 16px; color: var(--text-main);">
+                            ${{ "{:,.0f}".format(rec.loan_amount|float * 1000) }}
+                        </td>
+                        <td style="padding: 12px 16px;">
+                            {% if rec.credit_history|float == 1.0 %}
+                                <span style="color: #10B981; font-weight: 600;">Prime (1.0)</span>
+                            {% else %}
+                                <span style="color: #EF4444; font-weight: 600;">Default (0.0)</span>
+                            {% endif %}
+                        </td>
+                        <td style="padding: 12px 16px;">
+                            {% if rec.predicted_decision == 'APPROVED' %}
+                                <span class="badge-status-approved">APPROVED</span>
+                            {% else %}
+                                <span class="badge-status-rejected">REJECTED</span>
+                            {% endif %}
+                        </td>
+                        <td style="padding: 12px 16px; color: var(--text-main); font-weight: 600;">
+                            {{ rec.confidence }}%
+                        </td>
+                        <td style="padding: 12px 16px; color: var(--text-muted); font-size: 0.82rem;">
+                            {{ rec.model_name }}
+                        </td>
+                        <td style="padding: 12px 16px; text-align: right;">
+                            <div style="display: flex; gap: 8px; justify-content: flex-end;">
+                                <a href="/results/{{ rec.prediction_id }}" class="btn btn-secondary" style="padding: 4px 10px; font-size: 0.78rem;">View</a>
+                                <a href="/export/pdf/{{ rec.prediction_id }}" class="btn btn-secondary" style="padding: 4px 10px; font-size: 0.78rem;">PDF</a>
+                                <form method="POST" action="/history/delete/{{ rec.prediction_id }}" style="display: inline;" onsubmit="return confirm('Are you sure you want to permanently delete prediction {{ rec.prediction_id }}?');">
+                                    <button type="submit" style="background: none; border: 1px solid rgba(239, 68, 68, 0.4); color: #EF4444; padding: 4px 10px; border-radius: var(--radius-xs); cursor: pointer; font-size: 0.78rem;">Delete</button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="9" style="text-align: center; padding: 40px; color: var(--text-muted);">
+                            <div style="font-size: 2rem; margin-bottom: 8px;">📭</div>
+                            <div style="font-size: 1rem; color: var(--text-main); margin-bottom: 4px;">No prediction records found.</div>
+                            <div style="font-size: 0.85rem;">Submit an application on the Predictor page to generate audit history.</div>
+                            <div style="margin-top: 15px;">
+                                <a href="/predict" class="btn btn-primary" style="padding: 8px 18px; font-size: 0.85rem;">Run First Prediction</a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

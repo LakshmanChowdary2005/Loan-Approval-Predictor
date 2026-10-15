@@ -1,0 +1,133 @@
+{% extends "base.html" %}
+
+{% block title %}Reports & Downloads Hub | CreditPulse AI{% endblock %}
+
+{% block content %}
+<div style="margin-top: 15px; margin-bottom: 40px;">
+    <!-- Page Header -->
+    <div style="margin-bottom: 25px;">
+        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 6px;">
+            <span class="badge-tag">Documentation & Export</span>
+            <span style="font-size: 0.85rem; color: var(--text-muted);">Compliance Reporting Center</span>
+        </div>
+        <h1 style="font-size: 2.2rem; color: var(--text-main); margin-bottom: 8px;">
+            Reports & Analytical Exports Hub
+        </h1>
+        <p style="font-size: 1.05rem; color: var(--text-muted); max-width: 800px; line-height: 1.6;">
+            Download automated executive underwriting dossiers formatted via ReportLab PDF or multi-tab financial spreadsheets generated via OpenPyXL.
+        </p>
+    </div>
+
+    <!-- Download Options Cards -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 25px; margin-bottom: 30px;">
+        
+        <!-- Individual Application Report Generator -->
+        <div class="card" style="padding: 24px; border-radius: var(--radius-sm); display: flex; flex-direction: column; justify-content: space-between;">
+            <div>
+                <div style="font-size: 2rem; margin-bottom: 12px;">📑</div>
+                <h3 style="font-size: 1.15rem; color: var(--text-main); margin-bottom: 8px;">
+                    Individual Underwriting Dossier
+                </h3>
+                <p style="font-size: 0.88rem; color: var(--text-muted); line-height: 1.6; margin-bottom: 16px;">
+                    Generate a formal decision support document containing applicant parameters, model probabilities, SHAP explainability attribution, and risk disclosures.
+                </p>
+                <div style="margin-bottom: 16px;">
+                    <label style="display: block; font-size: 0.82rem; color: var(--text-muted); margin-bottom: 4px;">Enter Application / Prediction ID:</label>
+                    <input type="text" id="report-pred-id" class="form-control" placeholder="e.g. APP-20261014-001" style="width: 100%; padding: 8px 12px; background: var(--bg-input); border: 1px solid var(--border-color); color: var(--text-main); border-radius: var(--radius-xs);">
+                </div>
+            </div>
+            <div style="display: flex; gap: 10px;">
+                <button type="button" class="btn btn-primary" style="flex: 1; padding: 9px;" onclick="downloadIndividual('pdf')">Download PDF</button>
+                <button type="button" class="btn btn-secondary" style="flex: 1; padding: 9px;" onclick="downloadIndividual('excel')">Download Excel</button>
+            </div>
+        </div>
+
+        <!-- Historical Database Archive Export -->
+        <div class="card" style="padding: 24px; border-radius: var(--radius-sm); display: flex; flex-direction: column; justify-content: space-between;">
+            <div>
+                <div style="font-size: 2rem; margin-bottom: 12px;">🗄️</div>
+                <h3 style="font-size: 1.15rem; color: var(--text-main); margin-bottom: 8px;">
+                    Audit History Database Export
+                </h3>
+                <p style="font-size: 0.88rem; color: var(--text-muted); line-height: 1.6; margin-bottom: 16px;">
+                    Export the complete repository of historical applications, model confidence levels, EMI breakdowns, and recorded outcomes stored in the SQLite audit database.
+                </p>
+            </div>
+            <div style="display: flex; gap: 10px;">
+                <a href="/export/history-csv" class="btn btn-secondary" style="flex: 1; text-align: center; padding: 9px;">Export CSV</a>
+                <a href="/export/history-excel" class="btn btn-secondary" style="flex: 1; text-align: center; padding: 9px;">Export Excel</a>
+            </div>
+        </div>
+
+        <!-- Batch CSV Template -->
+        <div class="card" style="padding: 24px; border-radius: var(--radius-sm); display: flex; flex-direction: column; justify-content: space-between;">
+            <div>
+                <div style="font-size: 2rem; margin-bottom: 12px;">📥</div>
+                <h3 style="font-size: 1.15rem; color: var(--text-main); margin-bottom: 8px;">
+                    Batch CSV Scoring Template
+                </h3>
+                <p style="font-size: 0.88rem; color: var(--text-muted); line-height: 1.6; margin-bottom: 16px;">
+                    Download a standardized, pre-formatted CSV template with sample loan applications and column structures compatible with the Batch Prediction engine.
+                </p>
+            </div>
+            <div>
+                <a href="/api/sample-csv" class="btn btn-teal" style="display: block; text-align: center; padding: 9px; text-decoration: none;">
+                    Download Template CSV (batch_loan_template.csv)
+                </a>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Recent Application Downloads Quick-Table -->
+    <div class="card" style="padding: 24px; border-radius: var(--radius-sm);">
+        <h3 style="font-size: 1.15rem; color: var(--text-main); margin-bottom: 14px;">
+            Recent Inquiries Ready for Immediate Export
+        </h3>
+        <div class="table-responsive">
+            <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.88rem;">
+                <thead style="background: var(--bg-secondary); border-bottom: 1px solid var(--border-color); color: var(--text-muted); font-size: 0.8rem;">
+                    <tr>
+                        <th style="padding: 10px 14px;">Application ID</th>
+                        <th style="padding: 10px 14px;">Timestamp</th>
+                        <th style="padding: 10px 14px;">Decision</th>
+                        <th style="padding: 10px 14px;">Confidence</th>
+                        <th style="padding: 10px 14px; text-align: right;">Instant Exports</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for rec in recent_records %}
+                    <tr style="border-bottom: 1px solid var(--border-color);">
+                        <td style="padding: 10px 14px; font-weight: 600; color: var(--text-main);">{{ rec.prediction_id }}</td>
+                        <td style="padding: 10px 14px; color: var(--text-dim); font-size: 0.82rem;">{{ rec.timestamp }}</td>
+                        <td style="padding: 10px 14px;">
+                            <span class="badge-tag" style="background: {% if rec.predicted_decision == 'APPROVED' %}rgba(16,185,129,0.15); color: #10B981{% else %}rgba(239,68,68,0.15); color: #EF4444{% endif %};">
+                                {{ rec.predicted_decision }}
+                            </span>
+                        </td>
+                        <td style="padding: 10px 14px; color: var(--text-main);">{{ rec.confidence }}%</td>
+                        <td style="padding: 10px 14px; text-align: right;">
+                            <a href="/export/pdf/{{ rec.prediction_id }}" class="btn btn-secondary" style="padding: 4px 10px; font-size: 0.78rem;">📄 PDF</a>
+                            <a href="/export/excel/{{ rec.prediction_id }}" class="btn btn-secondary" style="padding: 4px 10px; font-size: 0.78rem;">📊 Excel</a>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="5" style="padding: 20px; text-align: center; color: var(--text-muted);">No recent applications found. Submit an application on the Predictor page first.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+function downloadIndividual(format) {
+    const id = document.getElementById('report-pred-id').value.trim();
+    if (!id) {
+        alert('Please enter or select a valid Application ID.');
+        return;
+    }
+    window.location.href = `/export/${format}/${encodeURIComponent(id)}`;
+}
+</script>
+{% endblock %}

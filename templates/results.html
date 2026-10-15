@@ -1,0 +1,189 @@
+{% extends "base.html" %}
+
+{% block title %}Application Result: {{ record.prediction_id }} | CreditPulse AI{% endblock %}
+
+{% block content %}
+<div style="margin-top: 15px; margin-bottom: 30px;">
+    <!-- Breadcrumb & Back Link -->
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <div style="font-size: 0.9rem; color: var(--text-muted);">
+            <a href="/predict" style="color: var(--primary); text-decoration: none;">← Back to Application Form</a> /
+            <span>Result: {{ record.prediction_id }}</span>
+        </div>
+        <div style="display: flex; gap: 10px;">
+            <a href="/export/pdf/{{ record.prediction_id }}" class="btn btn-secondary" style="padding: 8px 16px; font-size: 0.88rem;">📄 Download PDF</a>
+            <a href="/export/excel/{{ record.prediction_id }}" class="btn btn-secondary" style="padding: 8px 16px; font-size: 0.88rem;">📊 Download Excel</a>
+            <a href="/simulator?app_id={{ record.prediction_id }}&income={{ record.ApplicantIncome }}&loan={{ record.LoanAmount }}&term={{ record.Loan_Amount_Term }}&credit={{ record.Credit_History }}" class="btn btn-primary" style="padding: 8px 16px; font-size: 0.88rem;">🎛️ Simulate What-If</a>
+        </div>
+    </div>
+
+    <!-- Main Decision Verdict Banner -->
+    <div class="card" style="padding: 30px; border-radius: var(--radius-md); border-left: 6px solid {% if record.predicted_decision == 'APPROVED' %}#10B981{% else %}#EF4444{% endif %}; margin-bottom: 25px;">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 20px;">
+            <div>
+                <div style="font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); margin-bottom: 6px;">
+                    Automated Underwriting Determination
+                </div>
+                <h1 style="font-size: 2.2rem; color: {% if record.predicted_decision == 'APPROVED' %}#10B981{% else %}#EF4444{% endif %}; margin-bottom: 8px; display: flex; align-items: center; gap: 12px;">
+                    <span>{% if record.predicted_decision == 'APPROVED' %}✅ LIKELY APPROVAL{% else %}❌ LIKELY REJECTION{% endif %}</span>
+                </h1>
+                <p style="font-size: 1.05rem; color: var(--text-main); max-width: 650px; line-height: 1.6;">
+                    {% if record.predicted_decision == 'APPROVED' %}
+                        The machine learning underwriting engine classifies this application as <strong>qualifying for loan approval</strong> based on verified creditworthiness, debt capacity, and collateral metrics.
+                    {% else %}
+                        The machine learning underwriting engine predicts this application <strong>does not satisfy credit criteria</strong>. Elevated default risk is signaled by credit history or debt strain.
+                    {% endif %}
+                </p>
+                <div style="margin-top: 15px; font-size: 0.85rem; color: var(--text-dim);">
+                    Prediction ID: <code>{{ record.prediction_id }}</code> • Model: <strong>{{ record.model_name }}</strong> • Evaluated on: {{ record.timestamp }}
+                </div>
+            </div>
+
+            <!-- Score / Confidence Radial Card -->
+            <div style="background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 20px; text-align: center; min-width: 220px;">
+                <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 4px;">Model Confidence</div>
+                <div style="font-size: 2.5rem; font-weight: 800; color: {% if record.predicted_decision == 'APPROVED' %}#10B981{% else %}#EF4444{% endif %};">
+                    {{ record.confidence }}%
+                </div>
+                <div style="margin-top: 8px; font-size: 0.82rem; color: var(--text-dim);">
+                    Approval Prob: <strong>{{ record.prob_approved }}%</strong><br>
+                    Rejection Prob: <strong>{{ record.prob_rejected }}%</strong>
+                </div>
+                <div style="margin-top: 12px;">
+                    <span class="badge-tag" style="background: {% if record.risk_tier == 'LOW' %}rgba(16,185,129,0.15); color: #10B981{% elif record.risk_tier == 'MODERATE' %}rgba(245,158,11,0.15); color: #F59E0B{% else %}rgba(239,68,68,0.15); color: #EF4444{% endif %};">
+                        Risk Tier: {{ record.risk_tier }}
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2 Column Layout: Profile & Risk Ratios -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); gap: 25px; margin-bottom: 25px;">
+        
+        <!-- Applicant Profile Card -->
+        <div class="card" style="padding: 24px; border-radius: var(--radius-sm);">
+            <h3 style="font-size: 1.15rem; color: var(--text-main); margin-bottom: 16px; display: flex; align-items: center; gap: 8px;">
+                <span>👤</span> Applicant Input Parameters
+            </h3>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; font-size: 0.9rem;">
+                <div>
+                    <span style="color: var(--text-muted);">Gender:</span>
+                    <strong>{{ record.Gender }}</strong>
+                </div>
+                <div>
+                    <span style="color: var(--text-muted);">Marital Status:</span>
+                    <strong>{{ record.Married }}</strong>
+                </div>
+                <div>
+                    <span style="color: var(--text-muted);">Dependents:</span>
+                    <strong>{{ record.Dependents }}</strong>
+                </div>
+                <div>
+                    <span style="color: var(--text-muted);">Education:</span>
+                    <strong>{{ record.Education }}</strong>
+                </div>
+                <div>
+                    <span style="color: var(--text-muted);">Self-Employed:</span>
+                    <strong>{{ record.Self_Employed }}</strong>
+                </div>
+                <div>
+                    <span style="color: var(--text-muted);">Property Area:</span>
+                    <strong>{{ record.Property_Area }}</strong>
+                </div>
+                <div>
+                    <span style="color: var(--text-muted);">Applicant Income:</span>
+                    <strong>${{ "{:,.2f}".format(record.ApplicantIncome|float) }}</strong>
+                </div>
+                <div>
+                    <span style="color: var(--text-muted);">Co-Applicant Income:</span>
+                    <strong>${{ "{:,.2f}".format(record.CoapplicantIncome|float) }}</strong>
+                </div>
+                <div>
+                    <span style="color: var(--text-muted);">Requested Loan:</span>
+                    <strong>${{ "{:,.2f}".format(record.LoanAmount|float * 1000) }}</strong>
+                </div>
+                <div>
+                    <span style="color: var(--text-muted);">Repayment Term:</span>
+                    <strong>{{ "{:.0f}".format(record.Loan_Amount_Term|float) }} Months</strong>
+                </div>
+                <div>
+                    <span style="color: var(--text-muted);">Credit History:</span>
+                    <strong>{% if record.Credit_History|float == 1.0 %}1.0 (Prime / Meets Guidelines){% else %}0.0 (Unfavorable / Default){% endif %}</strong>
+                </div>
+                <div>
+                    <span style="color: var(--text-muted);">Combined Income:</span>
+                    <strong>${{ "{:,.2f}".format(record.ApplicantIncome|float + record.CoapplicantIncome|float) }}</strong>
+                </div>
+            </div>
+        </div>
+
+        <!-- Financial Risk & Affordability Breakdown Card -->
+        <div class="card" style="padding: 24px; border-radius: var(--radius-sm);">
+            <h3 style="font-size: 1.15rem; color: var(--text-main); margin-bottom: 16px; display: flex; align-items: center; gap: 8px;">
+                <span>💳</span> Financial Risk & Affordability Breakdown
+            </h3>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 16px;">
+                <div style="background: var(--bg-secondary); padding: 12px; border-radius: var(--radius-xs); border: 1px solid var(--border-color);">
+                    <div style="font-size: 0.78rem; color: var(--text-muted);">Estimated Monthly Installment (EMI)</div>
+                    <div style="font-size: 1.3rem; font-weight: 700; color: #38bdf8;">
+                        ${{ "{:,.2f}".format(record.emi_monthly|float) }}/mo
+                    </div>
+                </div>
+                <div style="background: var(--bg-secondary); padding: 12px; border-radius: var(--radius-xs); border: 1px solid var(--border-color);">
+                    <div style="font-size: 0.78rem; color: var(--text-muted);">Debt-to-Income (DTI) Ratio</div>
+                    <div style="font-size: 1.3rem; font-weight: 700; color: {% if record.dti_ratio|float <= 36.0 %}#10B981{% elif record.dti_ratio|float <= 43.0 %}#F59E0B{% else %}#EF4444{% endif %};">
+                        {{ record.dti_ratio }}%
+                    </div>
+                </div>
+            </div>
+
+            <div style="font-size: 0.88rem; color: var(--text-muted); line-height: 1.6;">
+                <p>• <strong>Standard Interest Assumption:</strong> 8.5% fixed APR retail amortizing loan.</p>
+                <p>• <strong>Safe DTI Cap:</strong> 36% standard threshold ({{ 'Within safe limit' if record.dti_ratio|float <= 36.0 else 'Exceeds standard 36% benchmark' }}).</p>
+                <p>• <strong>Collateral Demographic:</strong> {{ record.Property_Area }} property indicates standard retail valuation band.</p>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Explainable AI (SHAP) Attribution Card -->
+    <div class="card" style="padding: 26px; border-radius: var(--radius-sm); margin-bottom: 25px;">
+        <h3 style="font-size: 1.15rem; color: var(--text-main); margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+            <span>🔍</span> Explainable AI (XAI) Attribution & Decision Insights
+        </h3>
+        <p style="font-size: 0.95rem; color: var(--text-muted); margin-bottom: 18px; line-height: 1.6;">
+            {{ record.shap_summary.natural_language_explanation if record.shap_summary and record.shap_summary.natural_language_explanation else "The applicant's recorded Credit History, combined household earnings, and requested loan magnitude constitute the primary statistical factors influencing this machine learning prediction." }}
+        </p>
+
+        <!-- Driver Highlights -->
+        {% if record.shap_summary and record.shap_summary.positive_drivers %}
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+            <div style="background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.25); border-radius: var(--radius-xs); padding: 14px;">
+                <h4 style="font-size: 0.9rem; color: #10B981; margin-bottom: 8px;">Positive Supporting Factors (+)</h4>
+                <ul style="font-size: 0.85rem; color: var(--text-main); padding-left: 18px; line-height: 1.7;">
+                    {% for driver in record.shap_summary.positive_drivers %}
+                    <li><strong>{{ driver.feature }}</strong>: +{{ driver.contribution }} contribution</li>
+                    {% endfor %}
+                </ul>
+            </div>
+            <div style="background: rgba(239, 68, 68, 0.08); border: 1px solid rgba(239, 68, 68, 0.25); border-radius: var(--radius-xs); padding: 14px;">
+                <h4 style="font-size: 0.9rem; color: #EF4444; margin-bottom: 8px;">Constraining Risk Factors (-)</h4>
+                <ul style="font-size: 0.85rem; color: var(--text-main); padding-left: 18px; line-height: 1.7;">
+                    {% for driver in record.shap_summary.negative_drivers %}
+                    <li><strong>{{ driver.feature }}</strong>: {{ driver.contribution }} contribution</li>
+                    {% else %}
+                    <li style="color: var(--text-muted);">No severe negative risk constraints flagged.</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Decision Support Regulatory Disclaimer -->
+    <div style="background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 18px; font-size: 0.82rem; color: var(--text-dim); line-height: 1.5;">
+        <strong>Decision-Support Notice:</strong> This machine learning prediction provides automated statistical risk intelligence based on historical lending dataset patterns. It does not constitute a guaranteed lending decision, regulatory credit score, or legal approval. Final loan sanctioning requires human underwriter review, statutory asset valuation, and compliance verification.
+    </div>
+</div>
+{% endblock %}

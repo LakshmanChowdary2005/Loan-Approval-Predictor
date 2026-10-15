@@ -32,3 +32,16 @@ venv/
 .idea/
 .DS_Store
 Thumbs.db
+
+# Databases & Sensitive Data
+*.db
+*.sqlite
+*.sqlite3
+loan_system.db
+.env
+
+# Pytest cache & test coverage
+.pytest_cache/
+.coverage
+htmlcov/
+

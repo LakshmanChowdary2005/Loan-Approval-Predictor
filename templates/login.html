@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+
+{% block title %}Underwriter Authentication | CreditPulse AI{% endblock %}
+
+{% block content %}
+<div style="max-width: 440px; margin: 40px auto; padding: 20px;">
+    <div class="card" style="padding: 32px; border-radius: var(--radius-md); box-shadow: var(--shadow-card);">
+        <div style="text-align: center; margin-bottom: 24px;">
+            <div style="font-size: 2.5rem; margin-bottom: 10px;">🏛️</div>
+            <h2 style="font-size: 1.6rem; color: var(--text-main); margin-bottom: 6px;">Underwriter Login</h2>
+            <p style="font-size: 0.88rem; color: var(--text-muted);">
+                Authenticate to access management features, sensitive record deletion, and compliance audits.
+            </p>
+        </div>
+
+        <form method="POST" action="/login">
+            <div style="margin-bottom: 18px;">
+                <label style="display: block; font-size: 0.85rem; color: var(--text-muted); margin-bottom: 6px;">Username</label>
+                <input type="text" name="username" class="form-control" placeholder="Enter username (default: admin)" required autofocus style="width: 100%; padding: 10px 14px; background: var(--bg-input); border: 1px solid var(--border-color); color: var(--text-main); border-radius: var(--radius-xs);">
+            </div>
+
+            <div style="margin-bottom: 24px;">
+                <label style="display: block; font-size: 0.85rem; color: var(--text-muted); margin-bottom: 6px;">Password</label>
+                <input type="password" name="password" class="form-control" placeholder="Enter password (default: admin123)" required style="width: 100%; padding: 10px 14px; background: var(--bg-input); border: 1px solid var(--border-color); color: var(--text-main); border-radius: var(--radius-xs);">
+            </div>
+
+            <button type="submit" class="btn btn-primary" style="width: 100%; padding: 11px; font-size: 0.95rem; font-weight: 600;">
+                Sign In to Platform ➔
+            </button>
+        </form>
+
+        <div style="margin-top: 20px; padding: 12px; background: var(--bg-secondary); border-radius: var(--radius-xs); border: 1px solid var(--border-color); font-size: 0.8rem; color: var(--text-dim); text-align: center;">
+            <strong>Demo Credentials:</strong><br>
+            Username: <code>admin</code> • Password: <code>admin123</code>
+        </div>
+    </div>
+</div>
+{% endblock %}

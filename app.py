@@ -1,299 +1,297 @@
 """
-Flask Web Application for Loan Approval Prediction System
-=========================================================
-Enterprise Fintech Intelligence Platform:
-- Real-Time Multi-Model Underwriting (Random Forest, Logistic Regression, Decision Tree, Gradient Boosting, Extra Trees)
-- All-Models Consensus Engine (Ensemble agreement & confidence distribution)
-- What-If Sensitivity Simulator API (Dynamic probability vs loan amount & income curve)
-- Batch Processing API (CSV bulk scoring and export)
-- Loan Affordability & EMI Amortization Calculator
-- Interactive Dashboard with EDA, Live Charts, and Historical Dataset Explorer
+Flask Web Application for AI-Powered Loan Approval Prediction & Financial Risk Analysis System
+=============================================================================================
+ShadowFox Intermediate Internship Task - Production Full-Stack Application
+Architecture:
+- Modular separation: src.prediction_service, src.risk_analysis, src.explainability,
+  src.reporting, src.database, src.validators, src.data_loader, src.evaluate_model.
+- Complete routes: Dashboard, Predictor, Results, Explainability, Risk Analysis,
+  What-If Simulator, History, Batch CSV, Model Performance, Reports, Login/Logout, About.
 """
-
 import os
 import io
 import json
-import joblib
+import sqlite3
 import pandas as pd
-import numpy as np
-from flask import Flask, render_template, request, jsonify, send_file
+from datetime import datetime
+from flask import (
+    Flask, render_template, request, jsonify, send_file,
+    redirect, url_for, session, flash
+)
+
+from config import (
+    BASE_DIR, DATA_PATH, METADATA_FILE, SECRET_KEY,
+    ADMIN_USERNAME, ADMIN_PASSWORD_HASH, SESSION_COOKIE_HTTPONLY, SESSION_COOKIE_SAMESITE
+)
+from src.prediction_service import PredictionService
+from src.database import (
+    init_db, save_prediction, get_prediction_by_id, get_all_predictions,
+    delete_prediction_by_id, get_database_analytics, export_predictions_dataframe
+)
+from src.reporting import (
+    generate_prediction_pdf, generate_prediction_excel, generate_batch_excel_report
+)
+from src.validators import validate_applicant_data, validate_csv_dataframe
+from src.data_loader import DataLoader
+from src.evaluate_model import run_evaluation
 
 app = Flask(__name__)
+app.secret_key = SECRET_KEY
+app.config['SESSION_COOKIE_HTTPONLY'] = SESSION_COOKIE_HTTPONLY
+app.config['SESSION_COOKIE_SAMESITE'] = SESSION_COOKIE_SAMESITE
 
-# Paths configuration
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-MODEL_DIR = os.path.join(BASE_DIR, "model")
-DATA_PATH = os.path.join(BASE_DIR, "dataset", "loan_data.csv")
-META_PATH = os.path.join(MODEL_DIR, "model_metadata.json")
+# Initialize Database & Unified Prediction Service
+init_db()
+pred_service = PredictionService()
 
-# Load trained models & preprocessor
-models = {}
-preprocessor = None
+# Load Cached Metadata and Raw Dataset
 metadata = {}
-
-model_files = {
-    "Random Forest": "loan_model.pkl",
-    "Logistic Regression": "lr_model.pkl",
-    "Decision Tree": "dt_model.pkl",
-    "Gradient Boosting": "gb_model.pkl",
-    "Extra Trees": "et_model.pkl"
-}
-
-for name, filename in model_files.items():
-    path = os.path.join(MODEL_DIR, filename)
-    if os.path.exists(path):
-        try:
-            models[name] = joblib.load(path)
-        except Exception as e:
-            print(f"Warning: Could not load {name} ({filename}): {e}")
-
-if os.path.exists(os.path.join(MODEL_DIR, "preprocessing.pkl")):
+if os.path.exists(METADATA_FILE):
     try:
-        preprocessor = joblib.load(os.path.join(MODEL_DIR, "preprocessing.pkl"))
-    except Exception as e:
-        print(f"Warning: Could not load preprocessing.pkl: {e}")
-
-if os.path.exists(META_PATH):
-    try:
-        with open(META_PATH, "r", encoding="utf-8") as f:
+        with open(METADATA_FILE, "r", encoding="utf-8") as f:
             metadata = json.load(f)
     except Exception as e:
-        print(f"Warning: Could not load metadata: {e}")
+        print(f"Notice: Could not load metadata: {e}")
 
-print(f"Loaded {len(models)} models and preprocessor successfully.")
-
-# Load cached dataset for table explorer
 loan_df = None
 if os.path.exists(DATA_PATH):
-    loan_df = pd.read_csv(DATA_PATH)
+    try:
+        loan_df = pd.read_csv(DATA_PATH)
+    except Exception as e:
+        print(f"Notice: Could not load raw dataset: {e}")
 
 
-def parse_applicant_df(data):
-    """Sanitize and build DataFrame for pipeline inference"""
-    gender = str(data.get('Gender', 'Male')).strip()
-    married = str(data.get('Married', 'Yes')).strip()
-    dependents = str(data.get('Dependents', '0')).strip().replace('+', '')
-    education = str(data.get('Education', 'Graduate')).strip()
-    self_employed = str(data.get('Self_Employed', 'No')).strip()
-    property_area = str(data.get('Property_Area', 'Semiurban')).strip()
-    
-    applicant_income = float(data.get('ApplicantIncome', 5000))
-    coapplicant_income = float(data.get('CoapplicantIncome', 0))
-    loan_amount = float(data.get('LoanAmount', 150))
-    loan_term = float(data.get('Loan_Amount_Term', 360))
-    credit_history = float(data.get('Credit_History', 1.0))
-    
-    return pd.DataFrame([{
-        'Gender': gender,
-        'Married': married,
-        'Dependents': dependents,
-        'Education': education,
-        'Self_Employed': self_employed,
-        'ApplicantIncome': applicant_income,
-        'CoapplicantIncome': coapplicant_income,
-        'LoanAmount': loan_amount,
-        'Loan_Amount_Term': loan_term,
-        'Credit_History': credit_history,
-        'Property_Area': property_area
-    }])
-
+# =============================================================================
+# WEB PAGE ROUTES
+# =============================================================================
 
 @app.route('/')
 def home():
-    """Landing and executive overview page"""
+    """Landing and Executive Overview page."""
     return render_template('index.html', metadata=metadata)
-
-
-@app.route('/predict')
-def predict_page():
-    """Interactive Loan Application Form & Prediction Engine"""
-    return render_template('prediction.html', metadata=metadata, models=list(models.keys()))
 
 
 @app.route('/dashboard')
 def dashboard_page():
-    """Analytics, Exploratory Data Analysis, and Model Comparison Hub"""
-    return render_template('dashboard.html', metadata=metadata)
+    """Enterprise Analytics, EDA Visualizations, and Dataset Explorer."""
+    db_analytics = get_database_analytics()
+    return render_template('dashboard.html', metadata=metadata, db_analytics=db_analytics)
+
+
+@app.route('/predict')
+def predict_page():
+    """Dedicated Loan Application Form & Underwriting Engine."""
+    models_list = pred_service.get_supported_models()
+    return render_template('prediction.html', metadata=metadata, models=models_list)
+
+
+@app.route('/results/<prediction_id>')
+def results_page(prediction_id):
+    """Detailed Prediction Results Page with decision card, XAI attributions, and risk metrics."""
+    record = get_prediction_by_id(prediction_id)
+    if not record:
+        flash(f"Application record '{prediction_id}' was not found in the database.", "danger")
+        return redirect(url_for('history_page'))
+    return render_template('results.html', record=record)
+
+
+@app.route('/explainability')
+def explainability_page():
+    """Explainable AI (XAI) Hub showing global SHAP importances and model logic."""
+    return render_template('explainability.html', metadata=metadata)
+
+
+@app.route('/risk-analysis')
+def risk_analysis_page():
+    """Financial Risk Analysis, Affordability Stress Testing, and DTI Calculator."""
+    return render_template('risk_analysis.html', metadata=metadata)
 
 
 @app.route('/simulator')
 def simulator_page():
-    """Interactive What-If Sensitivity & Policy Simulator"""
-    return render_template('simulator.html', metadata=metadata, models=list(models.keys()))
+    """Interactive What-If Scenario Simulator."""
+    models_list = pred_service.get_supported_models()
+    return render_template('simulator.html', metadata=metadata, models=models_list)
+
+
+@app.route('/history')
+def history_page():
+    """Persistent Application History, Search, Filter, and Audit Logs."""
+    search_term = request.args.get('search', '').strip()
+    status_filter = request.args.get('status', 'all').strip()
+
+    records, total_count = get_all_predictions(
+        limit=100,
+        offset=0,
+        search=search_term if search_term else None,
+        status_filter=status_filter if status_filter != 'all' else None
+    )
+    analytics = get_database_analytics()
+    return render_template(
+        'history.html',
+        records=records,
+        total_count=total_count,
+        analytics=analytics,
+        search_term=search_term,
+        status_filter=status_filter
+    )
+
+
+@app.route('/history/delete/<prediction_id>', methods=['POST'])
+def history_delete(prediction_id):
+    """Deletes an individual prediction record."""
+    deleted = delete_prediction_by_id(prediction_id)
+    if deleted:
+        flash(f"Record {prediction_id} successfully deleted.", "info")
+    else:
+        flash(f"Could not delete record {prediction_id}.", "danger")
+    return redirect(url_for('history_page'))
 
 
 @app.route('/batch')
 def batch_page():
-    """Bulk Batch CSV Application Scoring & Export"""
+    """Bulk Batch CSV Application Scoring and Export."""
     return render_template('batch.html', metadata=metadata)
 
+
+@app.route('/model-performance')
+def model_performance_page():
+    """Model Performance Benchmarks and Demographic Subgroup Fairness."""
+    try:
+        fairness_eval = run_evaluation(model_name="Random Forest")
+    except Exception as e:
+        fairness_eval = {"error": str(e), "fairness_analysis": {}}
+    return render_template('model_performance.html', metadata=metadata, fairness=fairness_eval)
+
+
+@app.route('/reports')
+def reports_page():
+    """Centralized Reports & Compliance Exports Center."""
+    recent_records, _ = get_all_predictions(limit=10)
+    return render_template('reports.html', metadata=metadata, recent_records=recent_records)
+
+
+@app.route('/login', methods=['GET', 'POST'])
+def login_page():
+    """Underwriter Authentication."""
+    if request.method == 'POST':
+        username = request.form.get('username', '').strip()
+        password = request.form.get('password', '').strip()
+        
+        # Simple secure demo check
+        if username == ADMIN_USERNAME and password in ['admin123', 'admin']:
+            session['user'] = username
+            flash("Successfully logged in as authorized Underwriter.", "success")
+            return redirect(url_for('dashboard_page'))
+        else:
+            flash("Invalid credentials. Please use demo credentials (admin / admin123).", "danger")
+
+    return render_template('login.html')
+
+
+@app.route('/logout')
+def logout():
+    """Terminates session."""
+    session.pop('user', None)
+    flash("You have been signed out.", "info")
+    return redirect(url_for('home'))
+
+
+@app.route('/about')
+def about_page():
+    """System Architecture, Methodologies, and ShadowFox Internship Task Documentation."""
+    return render_template('about.html', metadata=metadata)
+
+
+# =============================================================================
+# REST API ENDPOINTS
+# =============================================================================
 
 @app.route('/api/predict', methods=['POST'])
 def api_predict():
     """
-    Real-time prediction API
-    Expects JSON with applicant details & optional model choice.
-    Returns approval status, confidence, probabilities, monthly EMI, and factor breakdown.
+    Real-Time Prediction API:
+    - Validates inputs strictly
+    - Evaluates model prediction & probabilities
+    - Computes financial risk & EMI metrics
+    - Extracts SHAP explainability attribution
+    - Saves record in SQLite database
+    - Returns comprehensive JSON response
     """
     try:
         data = request.get_json(force=True)
         if not data:
-            return jsonify({'success': False, 'error': 'No input data provided'}), 400
-        
-        selected_model_name = data.get('model', 'Random Forest')
-        if selected_model_name not in models:
-            selected_model_name = "Random Forest" if "Random Forest" in models else list(models.keys())[0]
-            
-        model = models[selected_model_name]
-        input_df = parse_applicant_df(data)
-        
-        pred = int(model.predict(input_df)[0])
-        probabilities = model.predict_proba(input_df)[0]
-        
-        prob_approved = round(float(probabilities[1]) * 100, 2)
-        prob_rejected = round(float(probabilities[0]) * 100, 2)
-        confidence = prob_approved if pred == 1 else prob_rejected
-        
-        # Financial analytics
-        app_inc = float(input_df['ApplicantIncome'].iloc[0])
-        coapp_inc = float(input_df['CoapplicantIncome'].iloc[0])
-        total_income = app_inc + coapp_inc
-        loan_k = float(input_df['LoanAmount'].iloc[0])
-        loan_term_mos = float(input_df['Loan_Amount_Term'].iloc[0])
-        loan_amount_actual = loan_k * 1000
-        
-        # Monthly EMI calculation (8.5% annual interest)
-        annual_rate = 0.085
-        monthly_rate = annual_rate / 12
-        if loan_term_mos > 0:
-            emi = (loan_amount_actual * monthly_rate * ((1 + monthly_rate) ** loan_term_mos)) / (((1 + monthly_rate) ** loan_term_mos) - 1)
-        else:
-            emi = loan_amount_actual / 360
-            
-        total_repayment = emi * loan_term_mos
-        total_interest = total_repayment - loan_amount_actual
-        dti_ratio = round((emi / max(total_income, 1)) * 100, 2)
-        
-        # Maximum safe loan amount (36% max DTI rule)
-        max_safe_emi = total_income * 0.36
-        if monthly_rate > 0:
-            max_safe_loan = (max_safe_emi * (((1 + monthly_rate) ** loan_term_mos) - 1)) / (monthly_rate * ((1 + monthly_rate) ** loan_term_mos))
-        else:
-            max_safe_loan = max_safe_emi * loan_term_mos
-            
-        # Actionable recommendations & mitigation strategies
-        recommendations = []
-        factors = []
-        credit_history = float(input_df['Credit_History'].iloc[0])
-        property_area = str(input_df['Property_Area'].iloc[0])
-        education = str(input_df['Education'].iloc[0])
-        
-        if credit_history == 1.0:
-            factors.append({
-                "factor": "Credit History",
-                "impact": "Prime (+45%)",
-                "type": "positive",
-                "text": "Prime institutional credit history with zero recorded defaults."
-            })
-        else:
-            factors.append({
-                "factor": "Credit History",
-                "impact": "High Risk (-65%)",
-                "type": "negative",
-                "text": "Negative credit trail or historical payment defaults detected."
-            })
-            recommendations.append("Clear overdue obligations and build a 12-month consecutive payment history.")
-            
-        if total_income >= 6000:
-            factors.append({
-                "factor": "Combined Income",
-                "impact": "Strong (+18%)",
-                "type": "positive",
-                "text": f"Substantial household earnings cushion (${total_income:,.0f}/mo)."
-            })
-        elif total_income < 3000:
-            factors.append({
-                "factor": "Combined Income",
-                "impact": "Restricted (-15%)",
-                "type": "negative",
-                "text": f"Modest household income reserve (${total_income:,.0f}/mo)."
-            })
-            recommendations.append("Consider onboarding an earning co-applicant to strengthen solvency.")
-            
-        if dti_ratio <= 35:
-            factors.append({
-                "factor": "Debt-to-Income (DTI)",
-                "impact": "Safe (+14%)",
-                "type": "positive",
-                "text": f"Comfortable repayment threshold ({dti_ratio}% of monthly income)."
-            })
-        else:
-            factors.append({
-                "factor": "Debt-to-Income (DTI)",
-                "impact": "Elevated (-22%)",
-                "type": "negative",
-                "text": f"Debt burden at {dti_ratio}% exceeds institutional 35% guideline."
-            })
-            suggested_down = max(0, loan_amount_actual - max_safe_loan)
-            if suggested_down > 5000:
-                recommendations.append(f"Reduce requested loan by ${suggested_down:,.0f} or provide additional down payment.")
-            recommendations.append("Extend loan term to 360 months to reduce monthly installment pressure.")
-            
-        if property_area == 'Semiurban':
-            factors.append({
-                "factor": "Property Demographics",
-                "impact": "Favorable (+10%)",
-                "type": "positive",
-                "text": "Semiurban collateral exhibits highest institutional liquidity (76.8% approval)."
-            })
-        elif property_area == 'Rural':
-            factors.append({
-                "factor": "Property Demographics",
-                "impact": "Conservative (-5%)",
-                "type": "neutral",
-                "text": "Rural asset valuation mandates conservative loan-to-value limits."
-            })
-            
-        if education == 'Graduate':
-            factors.append({
-                "factor": "Educational Attainment",
-                "impact": "Positive (+8%)",
-                "type": "positive",
-                "text": "Graduate qualification indicates resilient lifetime earning trajectory."
-            })
+            return jsonify({'success': False, 'error': 'No input payload provided.'}), 400
 
-        # Institutional verdict summary & APR recommendation
-        if pred == 1:
-            decision = "APPROVED"
-            theme = "success"
-            summary = "Application satisfies solvency and credit benchmarks. Recommended for fast-track underwriting approval."
-            apr_tier = "Prime: 6.75% Fixed APR" if credit_history == 1.0 and dti_ratio <= 30 else "Standard: 7.95% APR"
-        else:
-            decision = "REJECTED"
-            theme = "danger"
-            summary = "Application fails automated threshold. Structured collateral, co-signer, or credit rehabilitation required."
-            apr_tier = "Not Applicable (High Default Probability)"
+        # Validate input
+        is_valid, errors, cleaned = validate_applicant_data(data)
+        if not is_valid:
+            return jsonify({'success': False, 'error': 'Validation Error: ' + '; '.join(errors)}), 422
 
+        model_name = data.get('model', 'Random Forest')
+        result = pred_service.predict_single(cleaned, model_name=model_name)
+
+        # Save to SQLite History Database
+        risk_profile = result['risk_profile']
+        pred_id = f"APP-{datetime.now().strftime('%Y%m%d%H%M%S')}"
+
+        save_dict = {
+            'prediction_id': pred_id,
+            'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+            'Gender': cleaned['Gender'],
+            'Married': cleaned['Married'],
+            'Dependents': cleaned['Dependents'],
+            'Education': cleaned['Education'],
+            'Self_Employed': cleaned['Self_Employed'],
+            'ApplicantIncome': cleaned['ApplicantIncome'],
+            'CoapplicantIncome': cleaned['CoapplicantIncome'],
+            'LoanAmount': cleaned['LoanAmount'],
+            'Loan_Amount_Term': cleaned['Loan_Amount_Term'],
+            'Credit_History': cleaned['Credit_History'],
+            'Property_Area': cleaned['Property_Area'],
+            'model_name': result['model_name'],
+            'predicted_class': result['prediction'],
+            'predicted_decision': result['decision'],
+            'prob_approved': result['prob_approved'],
+            'prob_rejected': result['prob_rejected'],
+            'confidence': result['confidence'],
+            'risk_tier': risk_profile['risk_tier'],
+            'dti_ratio': risk_profile['dti_ratio'],
+            'emi_monthly': risk_profile['emi_monthly'],
+            'shap_summary': result['shap_summary']
+        }
+        save_prediction(save_dict)
+
+        # Response payload compatible with frontend script.js
         return jsonify({
             'success': True,
-            'prediction': pred,
-            'decision': decision,
-            'theme': theme,
-            'confidence': confidence,
-            'prob_approved': prob_approved,
-            'prob_rejected': prob_rejected,
-            'active_model': selected_model_name,
-            'emi_monthly': round(emi, 2),
-            'emi_ratio': dti_ratio,
-            'total_income': total_income,
-            'principal': loan_amount_actual,
-            'total_interest': round(total_interest, 2),
-            'total_repayment': round(total_repayment, 2),
-            'max_safe_loan': round(max_safe_loan, 2),
-            'apr_tier': apr_tier,
-            'factors': factors,
-            'recommendations': recommendations,
-            'summary': summary
+            'prediction_id': pred_id,
+            'prediction': result['prediction'],
+            'decision': result['decision'],
+            'theme': result['theme'],
+            'confidence': result['confidence'],
+            'prob_approved': result['prob_approved'],
+            'prob_rejected': result['prob_rejected'],
+            'active_model': result['model_name'],
+            'emi_monthly': risk_profile['emi_monthly'],
+            'emi_ratio': risk_profile['dti_ratio'],
+            'total_income': risk_profile['total_monthly_income'],
+            'principal': risk_profile['loan_amount_requested'],
+            'total_interest': risk_profile['total_interest'],
+            'total_repayment': risk_profile['total_repayment'],
+            'max_safe_loan': risk_profile['max_safe_loan'],
+            'risk_tier': risk_profile['risk_tier'],
+            'apr_tier': "Prime: 6.75% Fixed APR" if cleaned['Credit_History'] == 1.0 and risk_profile['dti_ratio'] <= 30 else "Standard: 8.50% APR",
+            'factors': [
+                {
+                    "factor": d['feature'],
+                    "impact": f"+{d['contribution']}",
+                    "type": "positive" if d['is_positive'] else "negative",
+                    "text": f"{d['feature']} statistical attribution score of {d['contribution']}."
+                } for d in result['shap_summary'].get('all_contributions', [])[:4]
+            ],
+            'recommendations': risk_profile.get('warnings', []),
+            'summary': result['shap_summary'].get('natural_language_explanation', risk_profile.get('verdict_summary', ''))
         })
 
     except Exception as e:
@@ -302,48 +300,25 @@ def api_predict():
 
 @app.route('/api/predict/all-models', methods=['POST'])
 def api_predict_all_models():
-    """
-    Ensemble Consensus Engine:
-    Evaluates applicant across all 5 candidate models simultaneously.
-    Returns consensus vote, individual predictions, and agreement metric.
-    """
+    """Multi-Model Consensus Engine."""
     try:
         data = request.get_json(force=True)
         if not data:
-            return jsonify({'success': False, 'error': 'No input data'}), 400
-            
-        input_df = parse_applicant_df(data)
-        
-        comparison = []
-        approved_votes = 0
-        total_models = len(models)
-        
-        for name, clf in models.items():
-            pred = int(clf.predict(input_df)[0])
-            prob = clf.predict_proba(input_df)[0]
-            if pred == 1:
-                approved_votes += 1
-                
-            comparison.append({
-                "model": name,
-                "prediction": pred,
-                "decision": "APPROVED" if pred == 1 else "REJECTED",
-                "confidence": round(float(prob[pred]) * 100, 2),
-                "approval_prob": round(float(prob[1]) * 100, 2),
-                "rejection_prob": round(float(prob[0]) * 100, 2)
-            })
-            
-        consensus_decision = "APPROVED" if approved_votes >= (total_models / 2.0) else "REJECTED"
-        agreement_pct = round((max(approved_votes, total_models - approved_votes) / total_models) * 100, 1)
-        
+            return jsonify({'success': False, 'error': 'No input data provided.'}), 400
+
+        is_valid, errors, cleaned = validate_applicant_data(data)
+        if not is_valid:
+            return jsonify({'success': False, 'error': '; '.join(errors)}), 422
+
+        consensus = pred_service.predict_consensus(cleaned)
         return jsonify({
             'success': True,
-            'consensus_decision': consensus_decision,
-            'approved_votes': approved_votes,
-            'rejected_votes': total_models - approved_votes,
-            'total_models': total_models,
-            'agreement_percentage': agreement_pct,
-            'models_comparison': comparison
+            'consensus_decision': consensus['consensus_decision'],
+            'approved_votes': consensus['approved_votes'],
+            'rejected_votes': consensus['rejected_votes'],
+            'total_models': consensus['total_models'],
+            'agreement_percentage': consensus['agreement_percentage'],
+            'models_comparison': consensus['votes']
         })
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
@@ -351,47 +326,18 @@ def api_predict_all_models():
 
 @app.route('/api/sensitivity', methods=['POST'])
 def api_sensitivity():
-    """
-    What-If Sensitivity Curve Generator:
-    Sweeps requested loan amount ($20k to $400k) and applicant income ($1.5k to $20k)
-    returning live probability curve coordinates for interactive plotting.
-    """
+    """Dynamic Sensitivity Curve Generator."""
     try:
         data = request.get_json(force=True)
+        is_valid, errors, cleaned = validate_applicant_data(data)
         model_name = data.get('model', 'Random Forest')
-        model = models.get(model_name, list(models.values())[0])
-        
-        base_df = parse_applicant_df(data)
-        
-        # 1. Sweep Loan Amounts
-        loan_steps = np.linspace(20, 450, 15)
-        loan_curve = []
-        for amt in loan_steps:
-            temp_df = base_df.copy()
-            temp_df['LoanAmount'] = float(amt)
-            prob_app = float(model.predict_proba(temp_df)[0][1]) * 100
-            loan_curve.append({
-                'loan_amount': round(float(amt), 0),
-                'approval_prob': round(prob_app, 2)
-            })
-            
-        # 2. Sweep Incomes
-        income_steps = np.linspace(1500, 20000, 12)
-        income_curve = []
-        for inc in income_steps:
-            temp_df = base_df.copy()
-            temp_df['ApplicantIncome'] = float(inc)
-            prob_app = float(model.predict_proba(temp_df)[0][1]) * 100
-            income_curve.append({
-                'income': round(float(inc), 0),
-                'approval_prob': round(prob_app, 2)
-            })
-            
+
+        curves = pred_service.generate_sensitivity_curve(cleaned, model_name=model_name)
         return jsonify({
             'success': True,
-            'model': model_name,
-            'loan_curve': loan_curve,
-            'income_curve': income_curve
+            'model': curves['model_name'],
+            'loan_curve': curves['loan_curve'],
+            'income_curve': curves['income_curve']
         })
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
@@ -399,72 +345,35 @@ def api_sensitivity():
 
 @app.route('/api/batch-predict', methods=['POST'])
 def api_batch_predict():
-    """
-    Batch Scoring Engine:
-    Processes uploaded CSV file or array of applications.
-    Scores each row, calculates aggregate metrics, and returns scored records.
-    """
+    """Bulk CSV Upload, Validation, Scoring, and Output Generation."""
     try:
         if 'file' not in request.files:
-            return jsonify({'success': False, 'error': 'No file uploaded'}), 400
-            
+            return jsonify({'success': False, 'error': 'No file uploaded.'}), 400
+
         file = request.files['file']
         if not file.filename.endswith('.csv'):
-            return jsonify({'success': False, 'error': 'Only CSV files supported'}), 400
-            
+            return jsonify({'success': False, 'error': 'Only CSV files (.csv) are supported.'}), 400
+
         df_uploaded = pd.read_csv(file)
-        
-        # Clean columns
-        clean_df = df_uploaded.copy()
-        if 'Dependents' in clean_df.columns:
-            clean_df['Dependents'] = clean_df['Dependents'].astype(str).str.replace('+', '', regex=False)
-            
-        model = models.get('Random Forest', list(models.values())[0])
-        
-        scored_records = []
-        approved_count = 0
-        
-        for idx, row in clean_df.iterrows():
-            app_id = row.get('Loan_ID', f"APP-{idx+1:04d}")
-            input_row = pd.DataFrame([{
-                'Gender': row.get('Gender', 'Male'),
-                'Married': row.get('Married', 'Yes'),
-                'Dependents': str(row.get('Dependents', '0')).replace('+', ''),
-                'Education': row.get('Education', 'Graduate'),
-                'Self_Employed': row.get('Self_Employed', 'No'),
-                'ApplicantIncome': float(row.get('ApplicantIncome', 4000)),
-                'CoapplicantIncome': float(row.get('CoapplicantIncome', 0)),
-                'LoanAmount': float(row.get('LoanAmount', 130)),
-                'Loan_Amount_Term': float(row.get('Loan_Amount_Term', 360)),
-                'Credit_History': float(row.get('Credit_History', 1.0)),
-                'Property_Area': row.get('Property_Area', 'Urban')
-            }])
-            
-            pred = int(model.predict(input_row)[0])
-            probs = model.predict_proba(input_row)[0]
-            if pred == 1:
-                approved_count += 1
-                
-            scored_records.append({
-                'Loan_ID': app_id,
-                'ApplicantIncome': float(input_row['ApplicantIncome'].iloc[0]),
-                'LoanAmount': float(input_row['LoanAmount'].iloc[0]),
-                'Credit_History': float(input_row['Credit_History'].iloc[0]),
-                'Property_Area': str(input_row['Property_Area'].iloc[0]),
-                'Prediction': pred,
-                'Decision': 'APPROVED' if pred == 1 else 'REJECTED',
-                'Confidence': round(float(probs[pred]) * 100, 2),
-                'Approved_Prob': round(float(probs[1]) * 100, 2)
-            })
-            
-        total = len(scored_records)
+        is_valid, issues, valid_rows, invalid_rows = validate_csv_dataframe(df_uploaded)
+
+        if not is_valid:
+            return jsonify({'success': False, 'error': '; '.join(issues)}), 400
+
+        batch_output = pred_service.batch_predict(valid_rows)
+
+        # Cache last batch scored in session/app memory for instant download
+        session['last_batch_records'] = batch_output['records']
+
         return jsonify({
             'success': True,
-            'total_scored': total,
-            'approved_count': approved_count,
-            'rejected_count': total - approved_count,
-            'batch_approval_rate': round((approved_count / max(total, 1)) * 100, 1),
-            'records': scored_records
+            'total_scored': batch_output['total_scored'],
+            'approved_count': batch_output['approved_count'],
+            'rejected_count': batch_output['rejected_count'],
+            'batch_approval_rate': batch_output['approval_rate'],
+            'invalid_rows_count': len(invalid_rows),
+            'invalid_rows': invalid_rows,
+            'records': batch_output['records']
         })
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
@@ -472,17 +381,19 @@ def api_batch_predict():
 
 @app.route('/api/sample-csv', methods=['GET'])
 def api_sample_csv():
-    """Download a template CSV for batch testing"""
-    sample_data = """Loan_ID,Gender,Married,Dependents,Education,Self_Employed,ApplicantIncome,CoapplicantIncome,LoanAmount,Loan_Amount_Term,Credit_History,Property_Area
+    """Download standardized sample batch CSV template."""
+    sample_csv_text = """Loan_ID,Gender,Married,Dependents,Education,Self_Employed,ApplicantIncome,CoapplicantIncome,LoanAmount,Loan_Amount_Term,Credit_History,Property_Area
 BATCH001,Male,Yes,1,Graduate,No,6500,2000,150,360,1.0,Semiurban
 BATCH002,Female,No,0,Graduate,No,4200,0,110,360,1.0,Urban
 BATCH003,Male,Yes,2,Not Graduate,Yes,2200,0,180,360,0.0,Rural
 BATCH004,Male,No,0,Graduate,No,8500,0,220,180,1.0,Urban
 BATCH005,Female,Yes,1,Graduate,Yes,5000,3500,200,360,1.0,Semiurban
 BATCH006,Male,Yes,0,Graduate,No,3100,1800,135,360,0.0,Rural
+BATCH007,Male,Yes,3+,Graduate,No,7200,1200,165,360,1.0,Urban
+BATCH008,Female,No,0,Not Graduate,No,1900,0,95,360,0.0,Rural
 """
     mem = io.BytesIO()
-    mem.write(sample_data.encode('utf-8'))
+    mem.write(sample_csv_text.encode('utf-8'))
     mem.seek(0)
     return send_file(
         mem,
@@ -494,38 +405,38 @@ BATCH006,Male,Yes,0,Graduate,No,3100,1800,135,360,0.0,Rural
 
 @app.route('/api/metadata', methods=['GET'])
 def api_metadata():
-    """Return model benchmarks, feature importance, and dataset statistics"""
+    """Returns model benchmark statistics and feature importance."""
     return jsonify(metadata)
 
 
 @app.route('/api/data', methods=['GET'])
 def api_data():
-    """Return paginated/filtered dataset rows for table explorer"""
+    """Paginated, searchable historical dataset rows for explorer."""
     if loan_df is None:
         return jsonify({'records': [], 'total': 0})
-    
+
     page = int(request.args.get('page', 1))
     limit = int(request.args.get('limit', 15))
     search = request.args.get('search', '').lower().strip()
     status_filter = request.args.get('status', 'all')
-    
+
     filtered_df = loan_df.copy()
     if status_filter in ['Y', 'N']:
         filtered_df = filtered_df[filtered_df['Loan_Status'] == status_filter]
-        
+
     if search:
         filtered_df = filtered_df[
             filtered_df['Loan_ID'].astype(str).str.lower().str.contains(search) |
             filtered_df['Property_Area'].astype(str).str.lower().str.contains(search) |
             filtered_df['Education'].astype(str).str.lower().str.contains(search)
         ]
-        
+
     total_count = len(filtered_df)
     start_idx = (page - 1) * limit
     end_idx = start_idx + limit
-    
+
     records = filtered_df.iloc[start_idx:end_idx].fillna("N/A").to_dict(orient='records')
-    
+
     return jsonify({
         'page': page,
         'limit': limit,
@@ -534,8 +445,83 @@ def api_data():
     })
 
 
+# =============================================================================
+# EXPORT AND REPORT DOWNLOAD ROUTES
+# =============================================================================
+
+@app.route('/export/pdf/<prediction_id>')
+def export_pdf(prediction_id):
+    """Download ReportLab PDF report for an individual prediction."""
+    record = get_prediction_by_id(prediction_id)
+    if not record:
+        flash(f"Application record '{prediction_id}' not found.", "danger")
+        return redirect(url_for('history_page'))
+
+    pdf_buffer = generate_prediction_pdf(record)
+    return send_file(
+        pdf_buffer,
+        mimetype='application/pdf',
+        as_attachment=True,
+        download_name=f"Underwriting_Report_{prediction_id}.pdf"
+    )
+
+
+@app.route('/export/excel/<prediction_id>')
+def export_excel(prediction_id):
+    """Download OpenPyXL Excel spreadsheet for an individual prediction."""
+    record = get_prediction_by_id(prediction_id)
+    if not record:
+        flash(f"Application record '{prediction_id}' not found.", "danger")
+        return redirect(url_for('history_page'))
+
+    excel_buffer = generate_prediction_excel(record)
+    return send_file(
+        excel_buffer,
+        mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        as_attachment=True,
+        download_name=f"Underwriting_Analysis_{prediction_id}.xlsx"
+    )
+
+
+@app.route('/export/history-csv')
+def export_history_csv():
+    """Export complete SQLite database history as CSV."""
+    df = export_predictions_dataframe()
+    mem = io.BytesIO()
+    df.to_csv(mem, index=False)
+    mem.seek(0)
+    return send_file(
+        mem,
+        mimetype='text/csv',
+        as_attachment=True,
+        download_name=f"CreditPulse_Application_History_{datetime.now().strftime('%Y%m%d')}.csv"
+    )
+
+
+@app.route('/export/history-excel')
+def export_history_excel():
+    """Export complete SQLite database history as Excel."""
+    df = export_predictions_dataframe()
+    mem = io.BytesIO()
+    with pd.ExcelWriter(mem, engine='openpyxl') as writer:
+        df.to_excel(writer, sheet_name='Prediction Audit Log', index=False)
+    mem.seek(0)
+    return send_file(
+        mem,
+        mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        as_attachment=True,
+        download_name=f"CreditPulse_Application_History_{datetime.now().strftime('%Y%m%d')}.xlsx"
+    )
+
+
+# =============================================================================
+# ENTRY POINT
+# =============================================================================
+
 if __name__ == '__main__':
-    print("=" * 60)
-    print("CreditPulse AI Platform running on http://127.0.0.1:5000")
-    print("=" * 60)
+    print("=" * 70)
+    print("CreditPulse AI Platform Initialized")
+    print(f"Supported Models: {pred_service.get_supported_models()}")
+    print("Running on http://127.0.0.1:5000")
+    print("=" * 70)
     app.run(host='127.0.0.1', port=5000, debug=True)

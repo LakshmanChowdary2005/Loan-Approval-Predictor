@@ -1,47 +1,12 @@
 {
     "dataset_summary": {
         "total_records": 614,
-        "total_features": 13,
+        "total_features": 14,
         "approved_count": 422,
         "rejected_count": 192,
         "approval_rate": 68.73,
-        "rejection_rate": 31.27,
-        "missing_values": {
-            "Loan_ID": 0,
-            "Gender": 13,
-            "Married": 3,
-            "Dependents": 15,
-            "Education": 0,
-            "Self_Employed": 32,
-            "ApplicantIncome": 0,
-            "CoapplicantIncome": 0,
-            "LoanAmount": 22,
-            "Loan_Amount_Term": 14,
-            "Credit_History": 50,
-            "Property_Area": 0,
-            "Loan_Status": 0
-        },
         "applicant_income_median": 3812.5,
-        "loan_amount_median": 128.0,
-        "credit_history_mode": 1.0,
-        "features": {
-            "categorical": [
-                "Gender",
-                "Married",
-                "Dependents",
-                "Education",
-                "Self_Employed",
-                "Property_Area"
-            ],
-            "numerical": [
-                "ApplicantIncome",
-                "CoapplicantIncome",
-                "LoanAmount",
-                "Loan_Amount_Term",
-                "Credit_History"
-            ],
-            "target": "Loan_Status"
-        }
+        "loan_amount_median": 128.0
     },
     "benchmark_metrics": {
         "Random Forest": {
@@ -63,13 +28,13 @@
                 ]
             ],
             "classification_report": {
-                "Rejected (0)": {
+                "Rejected": {
                     "precision": 0.9545454545454546,
                     "recall": 0.5526315789473685,
                     "f1-score": 0.7,
                     "support": 38.0
                 },
-                "Approved (1)": {
+                "Approved": {
                     "precision": 0.8316831683168316,
                     "recall": 0.9882352941176471,
                     "f1-score": 0.9032258064516129,
@@ -109,13 +74,13 @@
                 ]
             ],
             "classification_report": {
-                "Rejected (0)": {
+                "Rejected": {
                     "precision": 0.9565217391304348,
                     "recall": 0.5789473684210527,
                     "f1-score": 0.7213114754098361,
                     "support": 38.0
                 },
-                "Approved (1)": {
+                "Approved": {
                     "precision": 0.84,
                     "recall": 0.9882352941176471,
                     "f1-score": 0.9081081081081082,
@@ -155,13 +120,13 @@
                 ]
             ],
             "classification_report": {
-                "Rejected (0)": {
+                "Rejected": {
                     "precision": 0.75,
                     "recall": 0.631578947368421,
                     "f1-score": 0.6857142857142857,
                     "support": 38.0
                 },
-                "Approved (1)": {
+                "Approved": {
                     "precision": 0.8461538461538461,
                     "recall": 0.9058823529411765,
                     "f1-score": 0.875,
@@ -201,13 +166,13 @@
                 ]
             ],
             "classification_report": {
-                "Rejected (0)": {
+                "Rejected": {
                     "precision": 0.875,
                     "recall": 0.5526315789473685,
                     "f1-score": 0.6774193548387096,
                     "support": 38.0
                 },
-                "Approved (1)": {
+                "Approved": {
                     "precision": 0.8282828282828283,
                     "recall": 0.9647058823529412,
                     "f1-score": 0.8913043478260869,
@@ -247,13 +212,13 @@
                 ]
             ],
             "classification_report": {
-                "Rejected (0)": {
+                "Rejected": {
                     "precision": 0.9565217391304348,
                     "recall": 0.5789473684210527,
                     "f1-score": 0.7213114754098361,
                     "support": 38.0
                 },
-                "Approved (1)": {
+                "Approved": {
                     "precision": 0.84,
                     "recall": 0.9882352941176471,
                     "f1-score": 0.9081081081081082,
@@ -355,5 +320,5 @@
         "Gradient Boosting",
         "Extra Trees"
     ],
-    "trained_date": "2026-10-04"
+    "trained_date": "2026-10-14"
 }
