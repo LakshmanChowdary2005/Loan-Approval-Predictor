@@ -17,6 +17,20 @@ from config import MODEL_DIR, MODEL_FILES, DEFAULT_MODEL, CATEGORICAL_FEATURES, 
 from src.risk_analysis import calculate_financial_risk_profile
 from src.explainability import ModelExplainer
 
+
+def get_binary_class_probabilities(model, input_df):
+    """Return probabilities keyed by the target labels, independent of class order."""
+    classes = np.asarray(model.classes_)
+    probabilities = np.asarray(model.predict_proba(input_df)[0], dtype=float)
+    if len(classes) != len(probabilities):
+        raise ValueError("Model classes and predicted probabilities do not match.")
+
+    class_probabilities = {int(label): float(probability) for label, probability in zip(classes, probabilities)}
+    if set(class_probabilities) != {0, 1}:
+        raise ValueError("Loan approval models must expose both target classes 0 and 1.")
+    return class_probabilities
+
+
 class PredictionService:
     def __init__(self):
         self.models = {}
@@ -50,6 +64,17 @@ class PredictionService:
         """Returns list of currently loaded model algorithm names."""
         return list(self.models.keys())
 
+    def _resolve_model(self, model_name=None):
+        if not self.models:
+            raise RuntimeError("No trained loan approval models are available.")
+        if model_name is not None:
+            if model_name not in self.models:
+                raise ValueError(f"Unsupported model: {model_name}")
+            return self.models[model_name]
+        if DEFAULT_MODEL in self.models:
+            return self.models[DEFAULT_MODEL]
+        return next(iter(self.models.values()))
+
     def _build_input_df(self, data):
         """Constructs standardized 1-row DataFrame for pipeline input."""
         return pd.DataFrame([{
@@ -70,18 +95,18 @@ class PredictionService:
         """
         Runs prediction, probabilities, financial risk metrics, and SHAP attribution.
         """
-        chosen_model = model_name if model_name in self.models else (
-            DEFAULT_MODEL if DEFAULT_MODEL in self.models else list(self.models.keys())[0]
+        pipeline = self._resolve_model(model_name)
+        chosen_model = model_name if model_name is not None else (
+            DEFAULT_MODEL if DEFAULT_MODEL in self.models else next(iter(self.models))
         )
-        pipeline = self.models[chosen_model]
         input_df = self._build_input_df(applicant_data)
 
         pred = int(pipeline.predict(input_df)[0])
-        probabilities = pipeline.predict_proba(input_df)[0]
+        probabilities = get_binary_class_probabilities(pipeline, input_df)
 
-        prob_approved = round(float(probabilities[1]) * 100, 2)
-        prob_rejected = round(float(probabilities[0]) * 100, 2)
-        confidence = prob_approved if pred == 1 else prob_rejected
+        prob_approved = round(probabilities[1] * 100, 2)
+        prob_rejected = round(probabilities[0] * 100, 2)
+        confidence = round(probabilities[pred] * 100, 2)
 
         # Risk Analysis
         risk_profile = calculate_financial_risk_profile(applicant_data)
@@ -115,6 +140,8 @@ class PredictionService:
         """
         Ensemble consensus: queries all available candidate models.
         """
+        if not self.models:
+            raise RuntimeError("No trained loan approval models are available.")
         input_df = self._build_input_df(applicant_data)
         votes = []
         approved_count = 0
@@ -122,16 +149,16 @@ class PredictionService:
 
         for name, clf in self.models.items():
             pred = int(clf.predict(input_df)[0])
-            probs = clf.predict_proba(input_df)[0]
+            probs = get_binary_class_probabilities(clf, input_df)
             if pred == 1:
                 approved_count += 1
             votes.append({
                 "model": name,
                 "prediction": pred,
                 "decision": "APPROVED" if pred == 1 else "REJECTED",
-                "confidence": round(float(probs[pred]) * 100, 2),
-                "approval_prob": round(float(probs[1]) * 100, 2),
-                "rejection_prob": round(float(probs[0]) * 100, 2)
+                "confidence": round(probs[pred] * 100, 2),
+                "approval_prob": round(probs[1] * 100, 2),
+                "rejection_prob": round(probs[0] * 100, 2)
             })
 
         consensus_decision = "APPROVED" if approved_count >= (total_models / 2.0) else "REJECTED"
@@ -150,8 +177,10 @@ class PredictionService:
         """
         Computes dynamic probability response curves across Loan Amounts and Applicant Incomes.
         """
-        chosen_model = model_name if model_name in self.models else DEFAULT_MODEL
-        pipeline = self.models.get(chosen_model, list(self.models.values())[0])
+        pipeline = self._resolve_model(model_name)
+        chosen_model = model_name if model_name is not None else (
+            DEFAULT_MODEL if DEFAULT_MODEL in self.models else next(iter(self.models))
+        )
         base_df = self._build_input_df(applicant_data)
 
         # Loan Amount Sweep ($20k to $450k)
@@ -160,7 +189,7 @@ class PredictionService:
         for amt in loan_steps:
             tmp = base_df.copy()
             tmp['LoanAmount'] = float(amt)
-            prob = float(pipeline.predict_proba(tmp)[0][1]) * 100.0
+            prob = get_binary_class_probabilities(pipeline, tmp)[1] * 100.0
             loan_curve.append({
                 "loan_amount": round(float(amt), 0),
                 "approval_prob": round(prob, 2)
@@ -172,7 +201,7 @@ class PredictionService:
         for inc in inc_steps:
             tmp = base_df.copy()
             tmp['ApplicantIncome'] = float(inc)
-            prob = float(pipeline.predict_proba(tmp)[0][1]) * 100.0
+            prob = get_binary_class_probabilities(pipeline, tmp)[1] * 100.0
             income_curve.append({
                 "income": round(float(inc), 0),
                 "approval_prob": round(prob, 2)
@@ -188,8 +217,7 @@ class PredictionService:
         """
         Scores an array of pre-validated applicant dictionaries.
         """
-        chosen_model = model_name if model_name in self.models else DEFAULT_MODEL
-        pipeline = self.models.get(chosen_model, list(self.models.values())[0])
+        pipeline = self._resolve_model(model_name)
 
         scored_records = []
         approved_count = 0
@@ -197,7 +225,7 @@ class PredictionService:
         for row in valid_rows:
             input_df = self._build_input_df(row)
             pred = int(pipeline.predict(input_df)[0])
-            probs = pipeline.predict_proba(input_df)[0]
+            probs = get_binary_class_probabilities(pipeline, input_df)
             if pred == 1:
                 approved_count += 1
 
@@ -226,8 +254,8 @@ class PredictionService:
                 "Property_Area": row.get('Property_Area', 'Urban'),
                 "Prediction": pred,
                 "Decision": "APPROVED" if pred == 1 else "REJECTED",
-                "Confidence": round(float(probs[pred]) * 100, 2),
-                "Approved_Prob": round(float(probs[1]) * 100, 2),
+                "Confidence": round(probs[pred] * 100, 2),
+                "Approved_Prob": round(probs[1] * 100, 2),
                 "Risk_Tier": tier
             })
 

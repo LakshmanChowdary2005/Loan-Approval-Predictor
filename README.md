@@ -14,9 +14,9 @@
 
 ## 📌 Executive Summary
 
-**CreditPulse AI** is a production-grade, enterprise-ready Machine Learning decision-support platform designed to analyze loan applicant profiles, predict approval likelihoods, explain prediction factors via SHAP (Shapley Additive exPlanations), conduct financial debt stress testing, and generate institutional underwriting dossiers.
+**CreditPulse AI** is an educational loan-approval modeling project. It scores applicant profiles against a small historical dataset, reports model estimates and evaluation metrics, and demonstrates risk calculations and model explanations.
 
-Developed specifically for the **ShadowFox Intermediate Internship Task**, the system bridges the gap between raw statistical data science and real-world fintech deployment with strict anti-leakage preprocessing, auditable SQLite logging, automated ReportLab PDF reports, OpenPyXL analytical workbooks, and a responsive web interface.
+The application is not a production underwriting system. Its predictions are not lender decisions, calibrated lending odds, financial advice, or a guarantee of future performance.
 
 ---
 
@@ -59,9 +59,9 @@ The model is trained on the official ShadowFox loan dataset containing **614 app
 | `Dependents` | Categorical | 15 | Mode Imputation (`0`), `3+` &rarr; `3` | Living expense commitment |
 | `Education` | Categorical | 0 | None (Zero Missing) | Earning potential indicator |
 | `Self_Employed` | Categorical | 32 | Mode Imputation (`No`) | Income variance factor |
-| `ApplicantIncome` | Numeric ($) | 0 | None (Zero Missing) | Primary repayment capacity |
-| `CoapplicantIncome` | Numeric ($) | 0 | None (Zero Missing) | Supplemental solvency buffer |
-| `LoanAmount` | Numeric ($k) | 22 | Median Imputation (`$128k`) | Requested debt principal |
+| `ApplicantIncome` | Numeric (dataset units/month) | 0 | None (Zero Missing) | Primary repayment capacity |
+| `CoapplicantIncome` | Numeric (dataset units/month) | 0 | None (Zero Missing) | Supplemental solvency buffer |
+| `LoanAmount` | Numeric (thousands of dataset units) | 22 | Median Imputation (`128`) | Requested debt principal |
 | `Loan_Amount_Term` | Numeric (Mo) | 14 | Median Imputation (`360`) | Amortization period |
 | `Credit_History` | Binary | 50 | Mode Imputation (`1.0`) | Primary creditworthiness guide |
 | `Property_Area` | Categorical | 0 | None (Zero Missing) | Collateral demographic liquidity |
@@ -71,29 +71,24 @@ The model is trained on the official ShadowFox loan dataset containing **614 app
 
 ## 🤖 Model Benchmarking & Empirical Results
 
-All models were evaluated using **5-Fold Stratified Cross-Validation** on the training split (80%) and scored on a held-out test split (20%, 123 unseen applications) with a fixed seed (`random_state=42`):
+All models were evaluated using **5-Fold Stratified Cross-Validation** on the training split (80%) and scored on one held-out test split (20%, 123 applications) with a fixed seed (`random_state=42`). Balanced accuracy is included because the dataset contains substantially more approved than rejected applications.
 
-| Algorithm | 5-Fold CV Acc | Test Accuracy | Precision | Recall | F1-Score | ROC-AUC |
-| :--- | :---: | :---: | :---: | :---: | :---: | :---: |
-| **Logistic Regression** | 79.62% ± 3.4% | **86.18%** | 83.33% | 100.0% | **90.81%** | **85.20%** |
-| **Extra Trees Classifier** | 79.42% ± 3.2% | **86.18%** | 83.33% | 100.0% | **90.81%** | 85.14% |
-| **Random Forest (Default)** | 79.42% ± 3.5% | **85.37%** | 83.17% | 98.82% | 90.32% | 79.69% |
-| **Gradient Boosting** | 77.79% ± 3.1% | **83.74%** | 82.80% | 98.82% | 89.13% | 76.72% |
-| **Decision Tree** | 75.35% ± 4.2% | **82.11%** | 81.55% | 98.82% | 87.50% | 79.43% |
+| Algorithm | CV Accuracy (mean ± SD) | CV Balanced Accuracy | Held-Out Accuracy | Held-Out Balanced Accuracy | Held-Out ROC-AUC |
+| :--- | :---: | :---: | :---: | :---: | :---: |
+| **Logistic Regression** | 79.62% ± 4.26% | 68.95% | 86.18% | 78.36% | 85.20% |
+| **Extra Trees Classifier** | 79.42% ± 4.24% | 68.44% | 86.18% | 78.36% | 85.14% |
+| **Random Forest (Default)** | 79.42% ± 4.39% | 68.62% | 85.37% | 77.04% | 79.69% |
+| **Gradient Boosting** | 77.79% ± 3.17% | 67.62% | 83.74% | 75.87% | 76.72% |
+| **Decision Tree** | 75.35% ± 4.08% | 65.70% | 82.11% | 76.87% | 79.43% |
 
-> **Key Observation:** Class imbalance (68.7% Approved) means accuracy alone is insufficient. All models are calibrated for high recall on viable applicants while maintaining &gt;83% precision to protect against credit default.
+> These scores are estimates from one small dataset and one held-out split; they do not establish real-world lending accuracy. Raw accuracy alone can conceal errors on the less frequent rejected class. Retraining writes the current metrics to `model/model_metadata.json`.
 
 ---
 
 ## 🔍 Explainable AI (SHAP) & Decision Attribution
 
-1. **Global Feature Rankings:**
-   - **Credit History (44.8% weight):** Dominates automated decisions. Having a verified repayment history is the primary statistical prerequisite for automated approval.
-   - **Combined Income & Loan Amount (31.4% combined):** Determines the debt-to-income feasibility.
-   - **Property Area (Semiurban +9.2% approval edge):** Reflects empirical recovery rates in suburban real estate.
-2. **Local Instance Waterfall Attribution:**
-   - Every individual prediction computes SHAP values attributing exact percentage points of confidence shift.
-   - Outputs objective, legally compliant natural-language explanations without fabricated bank rules.
+1. **Global Feature Rankings:** The training pipeline exports model feature-importance values. These describe associations learned from this dataset; they are not causal effects or lending rules.
+2. **Local Instance Attribution:** SHAP explanations are provided when supported by the selected model. They summarize model behavior and are not legally reviewed reasons for an actual lender's decision.
 
 ---
 
@@ -227,6 +222,12 @@ python -m pytest tests/ -v
 python app.py
 ```
 Open **`http://127.0.0.1:5000`** in your browser.
+
+### Optional Streamlit dashboard
+```bash
+python -m streamlit run streamlit_app.py
+```
+The Streamlit dashboard provides the applicant estimator, model comparison, what-if view, and batch scoring.
 
 ---
 

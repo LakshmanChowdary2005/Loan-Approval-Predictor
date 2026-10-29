@@ -12,10 +12,14 @@
         "Random Forest": {
             "cv_accuracy_mean": 79.42,
             "cv_accuracy_std": 4.39,
+            "cv_balanced_accuracy_mean": 68.62,
+            "cv_macro_f1_mean": 70.33,
             "test_accuracy": 85.37,
+            "test_balanced_accuracy": 77.04,
             "precision": 83.17,
             "recall": 98.82,
             "f1_score": 90.32,
+            "macro_f1": 80.16,
             "roc_auc": 79.69,
             "confusion_matrix": [
                 [
@@ -58,10 +62,14 @@
         "Logistic Regression": {
             "cv_accuracy_mean": 79.62,
             "cv_accuracy_std": 4.26,
+            "cv_balanced_accuracy_mean": 68.95,
+            "cv_macro_f1_mean": 70.7,
             "test_accuracy": 86.18,
+            "test_balanced_accuracy": 78.36,
             "precision": 84.0,
             "recall": 98.82,
             "f1_score": 90.81,
+            "macro_f1": 81.47,
             "roc_auc": 85.2,
             "confusion_matrix": [
                 [
@@ -104,10 +112,14 @@
         "Decision Tree": {
             "cv_accuracy_mean": 75.35,
             "cv_accuracy_std": 4.08,
+            "cv_balanced_accuracy_mean": 65.7,
+            "cv_macro_f1_mean": 66.65,
             "test_accuracy": 82.11,
+            "test_balanced_accuracy": 76.87,
             "precision": 84.62,
             "recall": 90.59,
             "f1_score": 87.5,
+            "macro_f1": 78.04,
             "roc_auc": 79.43,
             "confusion_matrix": [
                 [
@@ -150,10 +162,14 @@
         "Gradient Boosting": {
             "cv_accuracy_mean": 77.79,
             "cv_accuracy_std": 3.17,
+            "cv_balanced_accuracy_mean": 67.62,
+            "cv_macro_f1_mean": 69.17,
             "test_accuracy": 83.74,
+            "test_balanced_accuracy": 75.87,
             "precision": 82.83,
             "recall": 96.47,
             "f1_score": 89.13,
+            "macro_f1": 78.44,
             "roc_auc": 76.72,
             "confusion_matrix": [
                 [
@@ -196,10 +212,14 @@
         "Extra Trees": {
             "cv_accuracy_mean": 79.42,
             "cv_accuracy_std": 4.24,
+            "cv_balanced_accuracy_mean": 68.44,
+            "cv_macro_f1_mean": 70.19,
             "test_accuracy": 86.18,
+            "test_balanced_accuracy": 78.36,
             "precision": 84.0,
             "recall": 98.82,
             "f1_score": 90.81,
+            "macro_f1": 81.47,
             "roc_auc": 85.14,
             "confusion_matrix": [
                 [
@@ -320,5 +340,5 @@
         "Gradient Boosting",
         "Extra Trees"
     ],
-    "trained_date": "2026-10-14"
+    "trained_date": "2026-10-29"
 }

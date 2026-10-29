@@ -11,6 +11,7 @@ if BASE_DIR not in sys.path:
 
 import json
 import joblib
+from datetime import date
 
 import numpy as np
 import pandas as pd
@@ -19,14 +20,14 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-from sklearn.model_selection import train_test_split, StratifiedKFold, cross_val_score
+from sklearn.model_selection import train_test_split, StratifiedKFold, cross_validate
 from sklearn.pipeline import Pipeline
 from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier, ExtraTreesClassifier
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.metrics import (
     accuracy_score, precision_score, recall_score, f1_score,
-    roc_auc_score, confusion_matrix, classification_report
+    roc_auc_score, balanced_accuracy_score, confusion_matrix, classification_report
 )
 
 from config import (
@@ -111,7 +112,17 @@ def train_and_evaluate(random_state=42):
             ('classifier', clf)
         ])
 
-        cv_scores = cross_val_score(pipe, X_train, y_train, cv=cv, scoring='accuracy')
+        cv_results = cross_validate(
+            pipe,
+            X_train,
+            y_train,
+            cv=cv,
+            scoring={
+                "accuracy": "accuracy",
+                "balanced_accuracy": "balanced_accuracy",
+                "macro_f1": "f1_macro"
+            }
+        )
         pipe.fit(X_train, y_train)
         trained_pipelines[name] = pipe
 
@@ -122,21 +133,30 @@ def train_and_evaluate(random_state=42):
         prec = precision_score(y_test, y_pred, zero_division=0)
         rec = recall_score(y_test, y_pred, zero_division=0)
         f1 = f1_score(y_test, y_pred, zero_division=0)
+        balanced_acc = balanced_accuracy_score(y_test, y_pred)
         roc = roc_auc_score(y_test, y_prob)
         cm = confusion_matrix(y_test, y_pred).tolist()
 
         benchmarks[name] = {
-            "cv_accuracy_mean": round(float(cv_scores.mean() * 100), 2),
-            "cv_accuracy_std": round(float(cv_scores.std() * 100), 2),
+            "cv_accuracy_mean": round(float(cv_results["test_accuracy"].mean() * 100), 2),
+            "cv_accuracy_std": round(float(cv_results["test_accuracy"].std() * 100), 2),
+            "cv_balanced_accuracy_mean": round(float(cv_results["test_balanced_accuracy"].mean() * 100), 2),
+            "cv_macro_f1_mean": round(float(cv_results["test_macro_f1"].mean() * 100), 2),
             "test_accuracy": round(float(acc * 100), 2),
+            "test_balanced_accuracy": round(float(balanced_acc * 100), 2),
             "precision": round(float(prec * 100), 2),
             "recall": round(float(rec * 100), 2),
             "f1_score": round(float(f1 * 100), 2),
+            "macro_f1": round(float(f1_score(y_test, y_pred, average='macro', zero_division=0) * 100), 2),
             "roc_auc": round(float(roc * 100), 2),
             "confusion_matrix": cm,
             "classification_report": classification_report(y_test, y_pred, target_names=['Rejected', 'Approved'], output_dict=True)
         }
-        print(f" -> {name:20s} | CV: {cv_scores.mean()*100:5.2f}% | Test Acc: {acc*100:5.2f}% | F1: {f1*100:5.2f}% | ROC-AUC: {roc*100:5.2f}%")
+        print(
+            f" -> {name:20s} | CV Acc: {cv_results['test_accuracy'].mean()*100:5.2f}%"
+            f" | CV Bal Acc: {cv_results['test_balanced_accuracy'].mean()*100:5.2f}%"
+            f" | Test Acc: {acc*100:5.2f}% | F1: {f1*100:5.2f}% | ROC-AUC: {roc*100:5.2f}%"
+        )
 
     # 5. Export Pipelines
     print("\n[5/6] Exporting Model Artifacts...")
@@ -256,7 +276,7 @@ def train_and_evaluate(random_state=42):
         "feature_importance": feat_imp,
         "default_model": "Random Forest",
         "supported_models": list(trained_pipelines.keys()),
-        "trained_date": "2026-10-14"
+        "trained_date": date.today().isoformat()
     }
 
     with open(METADATA_FILE, "w", encoding="utf-8") as f:

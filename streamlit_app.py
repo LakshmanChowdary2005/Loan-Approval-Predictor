@@ -1,30 +1,25 @@
-"""
-Streamlit Web Dashboard for Loan Approval Prediction
-====================================================
-Advanced Enterprise Edition with:
-- Real-Time Multi-Model Inference
-- Multi-Model Consensus Arena (Random Forest, Logistic Regression, Decision Tree, Gradient Boosting, Extra Trees)
-- What-If Sensitivity Simulator
-- Loan EMI & Amortization Calculator
-- EDA Visualizations Gallery
-- Model Benchmark Comparison Table
-- Raw Dataset Explorer & Batch Scoring
+"""Loan approval model review dashboard.
 
-Run with: py -3.12 -m streamlit run streamlit_app.py
+Run with: streamlit run streamlit_app.py
 """
 
-import os
 import json
+import os
+
 import joblib
-import pandas as pd
 import numpy as np
+import pandas as pd
 import streamlit as st
 
+from config import CATEGORICAL_FEATURES, MODEL_FILES, NUMERICAL_FEATURES
+from src.prediction_service import get_binary_class_probabilities
+from src.validators import validate_applicant_data
+
 st.set_page_config(
-    page_title="CreditPulse AI | Loan Underwriting Platform",
-    page_icon="🏦",
+    page_title="CreditPulse | Loan review",
+    page_icon=":material/account_balance:",
     layout="wide",
-    initial_sidebar_state="expanded"
+    initial_sidebar_state="expanded",
 )
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -32,353 +27,433 @@ MODEL_DIR = os.path.join(BASE_DIR, "model")
 DATA_PATH = os.path.join(BASE_DIR, "dataset", "loan_data.csv")
 META_PATH = os.path.join(MODEL_DIR, "model_metadata.json")
 
-# Custom CSS for rich styling
-st.markdown("""
-<style>
-    .main-title {
-        font-size: 2.3rem;
-        font-weight: 800;
-        background: linear-gradient(135deg, #6366f1, #10b981);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        margin-bottom: 0.2rem;
-    }
-    .metric-card {
-        background: rgba(30, 41, 59, 0.45);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        border-radius: 12px;
-        padding: 1.1rem;
-        text-align: center;
-    }
-</style>
-""", unsafe_allow_html=True)
 
-# Load Models
 @st.cache_resource
-def load_resources():
+def load_models():
     loaded_models = {}
-    if os.path.exists(os.path.join(MODEL_DIR, "loan_model.pkl")):
-        loaded_models["Random Forest"] = joblib.load(os.path.join(MODEL_DIR, "loan_model.pkl"))
-    if os.path.exists(os.path.join(MODEL_DIR, "lr_model.pkl")):
-        loaded_models["Logistic Regression"] = joblib.load(os.path.join(MODEL_DIR, "lr_model.pkl"))
-    if os.path.exists(os.path.join(MODEL_DIR, "dt_model.pkl")):
-        loaded_models["Decision Tree"] = joblib.load(os.path.join(MODEL_DIR, "dt_model.pkl"))
-    if os.path.exists(os.path.join(MODEL_DIR, "gb_model.pkl")):
-        loaded_models["Gradient Boosting"] = joblib.load(os.path.join(MODEL_DIR, "gb_model.pkl"))
-    if os.path.exists(os.path.join(MODEL_DIR, "et_model.pkl")):
-        loaded_models["Extra Trees"] = joblib.load(os.path.join(MODEL_DIR, "et_model.pkl"))
-    
-    meta = {}
-    if os.path.exists(META_PATH):
-        with open(META_PATH, "r", encoding="utf-8") as f:
-            meta = json.load(f)
-            
-    df_data = pd.read_csv(DATA_PATH) if os.path.exists(DATA_PATH) else pd.DataFrame()
-    return loaded_models, meta, df_data
+    for name, filename in MODEL_FILES.items():
+        path = os.path.join(MODEL_DIR, filename)
+        if os.path.exists(path):
+            loaded_models[name] = joblib.load(path)
+    return loaded_models
 
-models, metadata, df = load_resources()
 
-# Sidebar
-st.sidebar.title("🏦 CreditPulse AI")
-st.sidebar.markdown("**Enterprise Credit Risk Underwriter**")
-st.sidebar.success("● AI Pipeline: Online (v2.4)")
+@st.cache_data(ttl="15m", max_entries=1)
+def load_metadata():
+    if not os.path.exists(META_PATH):
+        return {}
+    with open(META_PATH, "r", encoding="utf-8") as file:
+        return json.load(file)
 
-selected_model_name = st.sidebar.selectbox(
-    "Active ML Classifier",
-    list(models.keys()),
-    index=0
+
+@st.cache_data(ttl="15m", max_entries=1)
+def load_dataset():
+    if not os.path.exists(DATA_PATH):
+        return pd.DataFrame()
+    return pd.read_csv(DATA_PATH)
+
+
+def build_input_frame(profile):
+    row = dict(profile)
+    row["Dependents"] = str(row["Dependents"]).replace("+", "")
+    return pd.DataFrame([row])
+
+
+def probability_label(value):
+    return f"{value:.1f}%" if value is not None else "Not available"
+
+
+models = load_models()
+metadata = load_metadata()
+df = load_dataset()
+
+if not models:
+    st.error("No trained model files were found in the model folder. Train the models before launching this dashboard.")
+    st.stop()
+
+with st.sidebar:
+    st.title("CreditPulse")
+    st.caption("Loan application review")
+    selected_model_name = st.selectbox("Scoring model", list(models))
+    st.divider()
+    st.caption(
+        "Predictions are estimates from historical data, not credit decisions, "
+        "financial advice, or a guarantee of future outcomes."
+    )
+
+model_metrics = metadata.get("benchmark_metrics", {}).get(selected_model_name, {})
+dataset_summary = metadata.get("dataset_summary", {})
+cv_accuracy = model_metrics.get("cv_accuracy_mean")
+cv_std = model_metrics.get("cv_accuracy_std")
+test_accuracy = model_metrics.get("test_accuracy")
+approval_rate = dataset_summary.get("approval_rate")
+
+st.title("Loan application review", icon=":material/assured_workload:")
+st.write(
+    "Explore a model estimate, compare it with other available classifiers, "
+    "and review the assumptions behind the result."
+)
+st.warning(
+    "This academic model was trained on a small historical dataset. Its output is not "
+    "a lending decision and should not be used as the sole basis for one.",
+    icon=":material/info:",
 )
 
-st.sidebar.markdown("---")
-st.sidebar.info("""
-**Candidate Ensembles:**
-- Random Forest (Default)
-- Logistic Regression
-- Decision Tree
-- Gradient Boosting
-- Extra Trees
-""")
+metric_columns = st.columns(4)
+metric_columns[0].metric("Training records", f"{dataset_summary.get('total_records', len(df)):,}")
+metric_columns[1].metric(
+    "5-fold CV accuracy",
+    probability_label(cv_accuracy),
+    delta=f"± {cv_std:.2f} percentage points" if cv_std is not None else None,
+)
+metric_columns[2].metric(
+    "Held-out accuracy",
+    probability_label(test_accuracy),
+    help="Measured on the stratified test split; separate from cross-validation.",
+)
+metric_columns[3].metric(
+    "Historical approval share",
+    probability_label(approval_rate),
+    help="Share of approved applications in the source dataset.",
+)
+st.caption(
+    "Reported scores describe historical data only. The held-out test set contains "
+    "123 applications and is not a guarantee of real-world performance."
+)
 
-st.markdown('<div class="main-title">🏦 CreditPulse AI • Loan Approval Prediction System</div>', unsafe_allow_html=True)
-st.markdown("Automated loan underwriting, ensemble consensus, and credit risk analytics powered by **Scikit-Learn Machine Learning**.")
+st.header("Applicant profile", divider="gray")
+with st.form("applicant_profile"):
+    col_identity, col_income, col_loan = st.columns(3)
 
-# Quick KPI Row
-col_k1, col_k2, col_k3, col_k4 = st.columns(4)
-with col_k1:
-    st.metric("Historical Applications", "614 Records", "Dataset")
-with col_k2:
-    st.metric("Top Benchmark Accuracy", "86.18%", "5-Fold CV Verified")
-with col_k3:
-    st.metric("Baseline Approval Rate", "68.72%", "Portfolio Avg")
-with col_k4:
-    st.metric("Credit Leverage", "10.1x", "Good vs Bad Credit")
-
-st.divider()
-
-# Navigation Tabs
-tab_predict, tab_simulator, tab_consensus, tab_batch, tab_analytics, tab_benchmark, tab_data = st.tabs([
-    "🔮 Predictor", "🎛️ What-If Simulator", "🤖 5-Model Consensus", "📁 Batch CSV Scoring", "📊 EDA Visualizations", "🔬 Model Benchmarks", "🗂️ Dataset Explorer"
-])
-
-# TAB 1: PREDICTOR
-with tab_predict:
-    st.subheader("Applicant Financial Profile")
-    
-    col1, col2, col3 = st.columns(3)
-    
-    with col1:
+    with col_identity:
         gender = st.selectbox("Gender", ["Male", "Female"])
-        married = st.selectbox("Marital Status", ["Yes", "No"])
+        married = st.selectbox("Marital status", ["Yes", "No"])
         dependents = st.selectbox("Dependents", ["0", "1", "2", "3+"])
-        education = st.selectbox("Education Level", ["Graduate", "Not Graduate"])
-        
-    with col2:
-        self_employed = st.selectbox("Self Employed", ["No", "Yes"])
-        property_area = st.selectbox("Property Collateral Location", ["Semiurban", "Urban", "Rural"])
-        applicant_income = st.number_input("Applicant Income ($/mo)", min_value=0, value=5849, step=100)
-        coapplicant_income = st.number_input("Co-Applicant Income ($/mo)", min_value=0, value=1500, step=100)
-        
-    with col3:
-        loan_amount = st.number_input("Requested Loan ($1,000s)", min_value=1, value=140, step=5)
-        loan_term = st.selectbox("Repayment Term (Months)", [360, 240, 180, 120, 60], index=0)
-        credit_history = st.selectbox(
-            "Credit History (Guidelines Met)",
-            options=[1.0, 0.0],
-            format_func=lambda x: "1.0 - Meets Guidelines (Prime Credit)" if x == 1.0 else "0.0 - Past Defaults (Bad Credit)"
+        education = st.selectbox("Education", ["Graduate", "Not Graduate"])
+        self_employed = st.selectbox("Self-employed", ["No", "Yes"])
+
+    with col_income:
+        applicant_income = st.number_input(
+            "Applicant monthly income (dataset units)",
+            min_value=0.0,
+            value=5849.0,
+            step=100.0,
         )
-        
-    st.divider()
-    
-    if st.button("🔮 Predict Loan Approval", type="primary", use_container_width=True):
-        model = models[selected_model_name]
-        
-        input_df = pd.DataFrame([{
-            'Gender': gender,
-            'Married': married,
-            'Dependents': dependents.replace('+', ''),
-            'Education': education,
-            'Self_Employed': self_employed,
-            'ApplicantIncome': float(applicant_income),
-            'CoapplicantIncome': float(coapplicant_income),
-            'LoanAmount': float(loan_amount),
-            'Loan_Amount_Term': float(loan_term),
-            'Credit_History': float(credit_history),
-            'Property_Area': property_area
-        }])
-        
-        pred = model.predict(input_df)[0]
-        probs = model.predict_proba(input_df)[0]
-        
-        confidence = probs[pred] * 100
-        total_income = applicant_income + coapplicant_income
-        loan_actual = loan_amount * 1000
-        monthly_rate = 0.085 / 12
-        emi = (loan_actual * monthly_rate * ((1 + monthly_rate) ** loan_term)) / (((1 + monthly_rate) ** loan_term) - 1)
-        dti = (emi / max(total_income, 1)) * 100
-        
-        res_col1, res_col2 = st.columns([1, 1])
-        
-        with res_col1:
-            if pred == 1:
-                st.success("### 🟢 LOAN APPROVED")
-                st.write("Application satisfies automated credit guidelines and debt thresholds.")
-            else:
-                st.error("### 🔴 LOAN REJECTED")
-                st.write("Application exceeds institutional default risk parameters.")
-                
-            st.metric("Model Confidence", f"{confidence:.2f}%")
-            st.progress(float(confidence / 100))
-            st.metric("Estimated Monthly EMI (@ 8.5%)", f"${emi:,.2f}/mo")
-            
-        with res_col2:
-            st.write("#### Underwriting Breakdown:")
-            st.write(f"- **Approval Probability:** `{probs[1]*100:.2f}%`")
-            st.write(f"- **Rejection Probability:** `{probs[0]*100:.2f}%`")
-            st.write(f"- **Total Household Income:** `${total_income:,.0f}/mo`")
-            st.write(f"- **Debt-to-Income (DTI):** `{dti:.1f}%`")
-            
-            st.write("#### Key Decision Factors:")
-            if credit_history == 1.0:
-                st.markdown("✅ **Credit History:** Meets guidelines (+45% positive impact)")
-            else:
-                st.markdown("❌ **Credit History:** Defaults or poor score (-65% negative impact)")
-                
-            if dti <= 35:
-                st.markdown(f"✅ **Repayment Ratio:** Safe DTI at {dti:.1f}% of income")
-            else:
-                st.markdown(f"⚠️ **Repayment Ratio:** High debt burden at {dti:.1f}%")
+        coapplicant_income = st.number_input(
+            "Co-applicant monthly income (dataset units)",
+            min_value=0.0,
+            value=1500.0,
+            step=100.0,
+        )
+        property_area = st.selectbox("Property area", ["Semiurban", "Urban", "Rural"])
+        credit_history = st.selectbox(
+            "Credit history",
+            [1.0, 0.0],
+            format_func=lambda value: (
+                "Meets historical guidelines" if value == 1.0 else "Does not meet historical guidelines"
+            ),
+        )
 
-# TAB 2: WHAT-IF SIMULATOR
+    with col_loan:
+        loan_amount = st.number_input(
+            "Requested loan (thousands of dataset units)",
+            min_value=1.0,
+            value=140.0,
+            step=5.0,
+        )
+        loan_term = st.selectbox("Repayment term (months)", [360, 240, 180, 120, 84, 60, 36, 12])
+        annual_rate = st.number_input(
+            "Illustrative annual interest rate (%)",
+            min_value=0.0,
+            max_value=100.0,
+            value=8.5,
+            step=0.25,
+        )
+        st.caption("Income and loan amounts use the source dataset's units.")
+
+    submitted = st.form_submit_button(
+        "Estimate outcome",
+        type="primary",
+        icon=":material/query_stats:",
+        width="stretch",
+    )
+
+if submitted:
+    st.session_state.pop("last_prediction", None)
+    st.session_state.pop("last_profile", None)
+    st.session_state.pop("last_model", None)
+    applicant_data = {
+        "Gender": gender,
+        "Married": married,
+        "Dependents": dependents,
+        "Education": education,
+        "Self_Employed": self_employed,
+        "ApplicantIncome": applicant_income,
+        "CoapplicantIncome": coapplicant_income,
+        "LoanAmount": loan_amount,
+        "Loan_Amount_Term": loan_term,
+        "Credit_History": credit_history,
+        "Property_Area": property_area,
+    }
+    is_valid, errors, cleaned_profile = validate_applicant_data(applicant_data)
+    if not is_valid:
+        st.error("Please correct the applicant profile before estimating.")
+        for error in errors:
+            st.write(f"- {error}")
+    else:
+        input_frame = build_input_frame(cleaned_profile)
+        model = models[selected_model_name]
+        predicted_class = int(model.predict(input_frame)[0])
+        class_probabilities = get_binary_class_probabilities(model, input_frame)
+        st.session_state["last_profile"] = cleaned_profile
+        st.session_state["last_model"] = selected_model_name
+        st.session_state["last_prediction"] = {
+            "class": predicted_class,
+            "probabilities": class_probabilities,
+            "annual_rate": annual_rate,
+        }
+
+if "last_prediction" in st.session_state:
+    last_result = st.session_state["last_prediction"]
+    last_profile = st.session_state["last_profile"]
+    approval_probability = last_result["probabilities"][1]
+    predicted_approval = last_result["class"] == 1
+    monthly_rate = last_result["annual_rate"] / 1200
+    payment_count = int(last_profile["Loan_Amount_Term"])
+    principal = float(last_profile["LoanAmount"]) * 1000
+    emi = (
+        principal * monthly_rate * (1 + monthly_rate) ** payment_count
+        / ((1 + monthly_rate) ** payment_count - 1)
+        if monthly_rate > 0
+        else principal / payment_count
+    )
+    household_income = (
+        float(last_profile["ApplicantIncome"]) + float(last_profile["CoapplicantIncome"])
+    )
+    dti = emi / household_income * 100 if household_income > 0 else None
+
+    st.header("Estimate", divider="gray")
+    if predicted_approval:
+        st.success("The selected model predicts the approved class.", icon=":material/check_circle:")
+    else:
+        st.error("The selected model predicts the rejected class.", icon=":material/cancel:")
+    st.caption(
+        f"Model: {st.session_state['last_model']} · "
+        "Probabilities are model estimates, not calibrated lending odds."
+    )
+
+    result_columns = st.columns(4)
+    result_columns[0].metric("Approval probability", f"{approval_probability * 100:.1f}%")
+    result_columns[1].metric("Rejection probability", f"{last_result['probabilities'][0] * 100:.1f}%")
+    result_columns[2].metric("Illustrative monthly payment", f"{emi:,.2f}")
+    result_columns[3].metric("Payment / household income", f"{dti:.1f}%" if dti is not None else "Not defined")
+    st.progress(float(approval_probability), text="Estimated approval probability")
+    st.caption(
+        "Payment estimate assumes a fixed interest rate entered above, monthly compounding, "
+        "and the dataset's loan amount scale. It is an illustration, not a quoted payment."
+    )
+
+tab_predict, tab_simulator, tab_consensus, tab_batch, tab_benchmarks, tab_data = st.tabs(
+    ["Prediction", "What-if", "Model consensus", "Batch scoring", "Model performance", "Dataset"]
+)
+
+with tab_predict:
+    st.subheader("What the model can and cannot tell you")
+    st.write(
+        "The estimate reflects patterns in the training data. It does not explain an "
+        "individual lender's policy, verify applicant information, or establish eligibility."
+    )
+    st.caption("Use the model as a learning and review aid only.")
+
 with tab_simulator:
-    st.subheader("🎛️ Real-Time What-If Sensitivity Policy Sandbox")
-    st.write("Adjust applicant variables and observe how approval odds change dynamically.")
-    
-    sim_c1, sim_c2 = st.columns([1, 1])
-    
-    with sim_c1:
-        s_income = st.slider("Applicant Monthly Income ($)", 500, 25000, 5849, 250)
-        s_coincome = st.slider("Co-Applicant Monthly Income ($)", 0, 15000, 1500, 250)
-        s_loan = st.slider("Requested Loan Amount ($1,000s)", 10, 500, 140, 5)
-        s_term = st.select_slider("Loan Term (Months)", [60, 120, 180, 240, 360, 480], value=360)
-        s_credit = st.radio("Credit History", [1.0, 0.0], format_func=lambda x: "Good (1.0)" if x==1.0 else "Bad (0.0)", horizontal=True)
-        s_area = st.selectbox("Location", ["Semiurban", "Urban", "Rural"], key="sim_area")
-        s_edu = st.selectbox("Education", ["Graduate", "Not Graduate"], key="sim_edu")
-        
-    with sim_c2:
-        model = models[selected_model_name]
-        sim_df = pd.DataFrame([{
-            'Gender': 'Male',
-            'Married': 'Yes',
-            'Dependents': '1',
-            'Education': s_edu,
-            'Self_Employed': 'No',
-            'ApplicantIncome': float(s_income),
-            'CoapplicantIncome': float(s_coincome),
-            'LoanAmount': float(s_loan),
-            'Loan_Amount_Term': float(s_term),
-            'Credit_History': float(s_credit),
-            'Property_Area': s_area
-        }])
-        
-        sim_pred = model.predict(sim_df)[0]
-        sim_probs = model.predict_proba(sim_df)[0]
-        
-        st.write("### Simulated Outcome")
-        if sim_pred == 1:
-            st.success(f"## 🟢 APPROVED ({sim_probs[1]*100:.1f}%)")
-        else:
-            st.error(f"## 🔴 REJECTED ({sim_probs[0]*100:.1f}%)")
-            
-        st.progress(float(sim_probs[1]))
-        st.write(f"Approval Probability: **{sim_probs[1]*100:.1f}%** | Rejection Probability: **{sim_probs[0]*100:.1f}%**")
-        
-        # Sweep curve
-        sweep_loans = np.linspace(20, 450, 15)
-        sweep_probs = []
-        for l_amt in sweep_loans:
-            t_df = sim_df.copy()
-            t_df['LoanAmount'] = l_amt
-            sweep_probs.append(float(model.predict_proba(t_df)[0][1]) * 100)
-            
-        curve_df = pd.DataFrame({
-            "Loan Amount ($k)": sweep_loans,
-            "Approval Probability (%)": sweep_probs
-        }).set_index("Loan Amount ($k)")
-        
-        st.write("#### Probability vs Loan Amount Curve:")
-        st.line_chart(curve_df)
+    st.subheader("What-if analysis")
+    st.caption("Change one input to see how this model's estimated probability responds.")
+    if "last_profile" not in st.session_state:
+        st.info("Enter an applicant profile and select **Estimate outcome** first.")
+    else:
+        profile = st.session_state["last_profile"]
+        simulation_loan = st.number_input(
+            "Alternative loan amount (thousands of dataset units)",
+            min_value=1.0,
+            value=float(profile["LoanAmount"]),
+            step=5.0,
+            key="simulation_loan",
+        )
+        simulation_profile = dict(profile, LoanAmount=simulation_loan)
+        simulation_frame = build_input_frame(simulation_profile)
+        simulation_model = models[selected_model_name]
+        simulation_probabilities = get_binary_class_probabilities(simulation_model, simulation_frame)
+        st.metric("Estimated approval probability", f"{simulation_probabilities[1] * 100:.1f}%")
 
-# TAB 3: 5-MODEL CONSENSUS
+        maximum_loan = max(450.0, float(profile["LoanAmount"]) * 2)
+        loan_values = np.linspace(1.0, maximum_loan, 20)
+        curve = []
+        for amount in loan_values:
+            scenario = dict(profile, LoanAmount=float(amount))
+            scenario_probabilities = get_binary_class_probabilities(
+                simulation_model,
+                build_input_frame(scenario),
+            )
+            curve.append(
+                {
+                    "Loan amount (thousands of dataset units)": float(amount),
+                    "Approval probability (%)": scenario_probabilities[1] * 100,
+                }
+            )
+        st.line_chart(
+            pd.DataFrame(curve).set_index("Loan amount (thousands of dataset units)"),
+            y="Approval probability (%)",
+            x_label="Loan amount (thousands of dataset units)",
+            y_label="Approval probability (%)",
+        )
+
 with tab_consensus:
-    st.subheader("🤖 Multi-Model Consensus Arena")
-    st.write("Evaluate applicant profile simultaneously across all 5 ensemble algorithms.")
-    
-    test_profile = pd.DataFrame([{
-        'Gender': 'Male',
-        'Married': 'Yes',
-        'Dependents': '1',
-        'Education': 'Graduate',
-        'Self_Employed': 'No',
-        'ApplicantIncome': 6000.0,
-        'CoapplicantIncome': 2000.0,
-        'LoanAmount': 150.0,
-        'Loan_Amount_Term': 360.0,
-        'Credit_History': 1.0,
-        'Property_Area': 'Semiurban'
-    }])
-    
-    consensus_data = []
-    approved_votes = 0
-    for name, clf in models.items():
-        p = int(clf.predict(test_profile)[0])
-        pr = clf.predict_proba(test_profile)[0]
-        if p == 1: approved_votes += 1
-        consensus_data.append({
-            "Algorithm": name,
-            "Decision": "🟢 APPROVED" if p == 1 else "🔴 REJECTED",
-            "Confidence (%)": round(float(pr[p]) * 100, 2),
-            "Approval Prob (%)": round(float(pr[1]) * 100, 2),
-            "Rejection Prob (%)": round(float(pr[0]) * 100, 2)
-        })
-        
-    st.dataframe(pd.DataFrame(consensus_data), use_container_width=True)
-    st.info(f"**Consensus:** {approved_votes} of {len(models)} Models Vote for Approval ({approved_votes/len(models)*100:.0f}% Agreement)")
+    st.subheader("Compare available models")
+    st.caption("Every model evaluates the same applicant profile saved from the prediction form.")
+    if "last_profile" not in st.session_state:
+        st.info("Enter an applicant profile and select **Estimate outcome** first.")
+    else:
+        profile_frame = build_input_frame(st.session_state["last_profile"])
+        votes = []
+        for name, model in models.items():
+            predicted_class = int(model.predict(profile_frame)[0])
+            probabilities = get_binary_class_probabilities(model, profile_frame)
+            votes.append(
+                {
+                    "Model": name,
+                    "Predicted class": "Approved" if predicted_class == 1 else "Rejected",
+                    "Approval probability (%)": round(probabilities[1] * 100, 2),
+                    "Rejection probability (%)": round(probabilities[0] * 100, 2),
+                }
+            )
+        votes_df = pd.DataFrame(votes)
+        st.dataframe(votes_df, hide_index=True, width="stretch")
+        approvals = sum(row["Predicted class"] == "Approved" for row in votes)
+        st.metric("Model agreement", f"{approvals} of {len(votes)} predict the approved class")
+        st.caption("A majority vote is not a lending decision and does not resolve disagreement between models.")
 
-# TAB 4: BATCH CSV SCORING
 with tab_batch:
-    st.subheader("📁 Bulk Batch Application Scoring")
-    st.write("Upload a CSV file of applicants to score in batch.")
-    
-    uploaded_file = st.file_uploader("Upload CSV", type=["csv"])
+    st.subheader("Batch scoring")
+    st.write("Upload a CSV with all applicant features. A `Loan_ID` column is optional.")
+    required_columns = CATEGORICAL_FEATURES + NUMERICAL_FEATURES
+    uploaded_file = st.file_uploader("Applicant CSV", type=["csv"], key="batch_upload")
     if uploaded_file is not None:
-        batch_df = pd.read_csv(uploaded_file)
-        st.write(f"Loaded {len(batch_df)} applications.")
-        
-        if st.button("🚀 Score Entire Batch"):
-            model = models["Random Forest"]
-            scored_list = []
-            for _, row in batch_df.iterrows():
-                row_df = pd.DataFrame([{
-                    'Gender': row.get('Gender', 'Male'),
-                    'Married': row.get('Married', 'Yes'),
-                    'Dependents': str(row.get('Dependents', '0')).replace('+', ''),
-                    'Education': row.get('Education', 'Graduate'),
-                    'Self_Employed': row.get('Self_Employed', 'No'),
-                    'ApplicantIncome': float(row.get('ApplicantIncome', 4000)),
-                    'CoapplicantIncome': float(row.get('CoapplicantIncome', 0)),
-                    'LoanAmount': float(row.get('LoanAmount', 130)),
-                    'Loan_Amount_Term': float(row.get('Loan_Amount_Term', 360)),
-                    'Credit_History': float(row.get('Credit_History', 1.0)),
-                    'Property_Area': row.get('Property_Area', 'Urban')
-                }])
-                pred_val = int(model.predict(row_df)[0])
-                prob_val = model.predict_proba(row_df)[0]
-                scored_list.append({
-                    "Loan_ID": row.get("Loan_ID", "N/A"),
-                    "Income": float(row.get("ApplicantIncome", 0)),
-                    "LoanAmount": float(row.get("LoanAmount", 0)),
-                    "Decision": "APPROVED" if pred_val == 1 else "REJECTED",
-                    "Confidence (%)": round(float(prob_val[pred_val]) * 100, 2)
-                })
-                
-            res_df = pd.DataFrame(scored_list)
-            st.success(f"Batch Scoring Complete! Approved: {(res_df['Decision'] == 'APPROVED').sum()} | Rejected: {(res_df['Decision'] == 'REJECTED').sum()}")
-            st.dataframe(res_df, use_container_width=True)
+        try:
+            batch_df = pd.read_csv(uploaded_file)
+        except (pd.errors.EmptyDataError, pd.errors.ParserError, UnicodeDecodeError) as error:
+            st.error(f"Could not read the uploaded CSV: {error}")
+        else:
+            missing_columns = [column for column in required_columns if column not in batch_df.columns]
+            if missing_columns:
+                st.error(f"Missing required feature columns: {', '.join(missing_columns)}")
+            elif st.button("Score batch", type="primary", icon=":material/upload_file:"):
+                valid_profiles = []
+                invalid_rows = []
+                for row_index, row in batch_df.iterrows():
+                    row_data = row.to_dict()
+                    if "Dependents" in row_data and isinstance(row_data["Dependents"], (int, float)):
+                        if float(row_data["Dependents"]).is_integer():
+                            row_data["Dependents"] = str(int(row_data["Dependents"]))
+                    is_valid, errors, cleaned = validate_applicant_data(row_data)
+                    if is_valid:
+                        valid_profiles.append((row_index, row_data.get("Loan_ID", row_index + 1), cleaned))
+                    else:
+                        invalid_rows.append(
+                            {
+                                "CSV row": row_index + 2,
+                                "Loan_ID": row_data.get("Loan_ID", ""),
+                                "Validation errors": "; ".join(errors),
+                            }
+                        )
 
-# TAB 5: EDA VISUALIZATIONS
-with tab_analytics:
-    st.subheader("Exploratory Data Analysis (EDA) Gallery")
-    img_dir = os.path.join(BASE_DIR, "static", "images", "eda")
-    if os.path.exists(img_dir):
-        c1, c2 = st.columns(2)
-        with c1:
-            for f in ["loan_status_distribution.png", "credit_history_vs_approval.png", "income_vs_loan_scatter.png"]:
-                p = os.path.join(img_dir, f)
-                if os.path.exists(p): st.image(p)
-        with c2:
-            for f in ["property_area_vs_approval.png", "education_vs_approval.png", "correlation_heatmap.png"]:
-                p = os.path.join(img_dir, f)
-                if os.path.exists(p): st.image(p)
+                if valid_profiles:
+                    model = models[selected_model_name]
+                    scored_rows = []
+                    for _, loan_id, applicant in valid_profiles:
+                        frame = build_input_frame(applicant)
+                        prediction = int(model.predict(frame)[0])
+                        probabilities = get_binary_class_probabilities(model, frame)
+                        scored_rows.append(
+                            {
+                                "Loan_ID": loan_id,
+                                "Predicted class": "Approved" if prediction == 1 else "Rejected",
+                                "Approval probability (%)": round(probabilities[1] * 100, 2),
+                                "Rejection probability (%)": round(probabilities[0] * 100, 2),
+                            }
+                        )
+                    scored_df = pd.DataFrame(scored_rows)
+                    st.dataframe(scored_df, hide_index=True, width="stretch")
+                    st.download_button(
+                        "Download scored CSV",
+                        data=scored_df.to_csv(index=False).encode("utf-8"),
+                        file_name="loan_predictions.csv",
+                        mime="text/csv",
+                        icon=":material/download:",
+                    )
+                else:
+                    st.warning("No valid applicant rows were found; no predictions were generated.")
 
-# TAB 6: BENCHMARKS
-with tab_benchmark:
-    st.subheader("Multi-Model Comparative Benchmarks")
-    if metadata and "benchmark_metrics" in metadata:
-        b_data = []
-        for name, m in metadata["benchmark_metrics"].items():
-            b_data.append({
-                "Algorithm": name,
-                "5-Fold CV Acc (%)": m["cv_accuracy_mean"],
-                "Test Acc (%)": m["test_accuracy"],
-                "Precision (%)": m["precision"],
-                "Recall (%)": m["recall"],
-                "F1-Score (%)": m["f1_score"],
-                "ROC-AUC (%)": m["roc_auc"]
-            })
-        st.dataframe(pd.DataFrame(b_data).sort_values(by="Test Acc (%)", ascending=False), use_container_width=True)
+                if invalid_rows:
+                    st.warning(f"{len(invalid_rows)} row(s) were skipped because their values were invalid.")
+                    st.dataframe(pd.DataFrame(invalid_rows), hide_index=True, width="stretch")
 
-# TAB 7: DATASET EXPLORER
+with tab_benchmarks:
+    st.subheader("Model performance")
+    st.caption(
+        "Cross-validation summarizes five training folds. Held-out scores come from one "
+        "stratified test split and can vary with the split."
+    )
+    benchmark_metrics = metadata.get("benchmark_metrics", {})
+    if benchmark_metrics:
+        benchmark_rows = []
+        for name, metrics in benchmark_metrics.items():
+            benchmark_rows.append(
+                {
+                    "Model": name,
+                    "CV accuracy (%)": metrics.get("cv_accuracy_mean"),
+                    "CV accuracy SD (pp)": metrics.get("cv_accuracy_std"),
+                    "CV balanced accuracy (%)": metrics.get("cv_balanced_accuracy_mean"),
+                    "CV macro F1 (%)": metrics.get("cv_macro_f1_mean"),
+                    "Held-out accuracy (%)": metrics.get("test_accuracy"),
+                    "Held-out balanced accuracy (%)": metrics.get("test_balanced_accuracy"),
+                    "Held-out macro F1 (%)": metrics.get("macro_f1"),
+                    "Held-out ROC-AUC (%)": metrics.get("roc_auc"),
+                }
+            )
+        benchmark_df = pd.DataFrame(benchmark_rows).sort_values(
+            by="CV accuracy (%)",
+            ascending=False,
+            na_position="last",
+        )
+        st.dataframe(benchmark_df, hide_index=True, width="stretch")
+        if "cv_balanced_accuracy_mean" not in next(iter(benchmark_metrics.values())):
+            st.info("Retrain models to add cross-validated balanced accuracy and macro F1 metrics.")
+    else:
+        st.info("No benchmark metadata is available. Train the models to generate evaluation metrics.")
+
 with tab_data:
-    st.subheader("Historical Applications Dataset")
-    if not df.empty:
-        st.dataframe(df, use_container_width=True)
+    st.subheader("Training dataset")
+    if df.empty:
+        st.info("The source dataset was not found.")
+    else:
+        st.caption(f"{len(df):,} source records · {len(df.columns)} columns")
+        if "Loan_Status" in df.columns:
+            status_counts = df["Loan_Status"].value_counts(dropna=False).rename_axis("Loan status").to_frame("Applications")
+            st.bar_chart(status_counts, y="Applications", x_label="Loan status", y_label="Applications")
+        eda_dir = os.path.join(BASE_DIR, "static", "images", "eda")
+        image_names = [
+            "loan_status_distribution.png",
+            "credit_history_vs_approval.png",
+            "property_area_vs_approval.png",
+            "education_vs_approval.png",
+        ]
+        existing_images = [
+            (name, os.path.join(eda_dir, name))
+            for name in image_names
+            if os.path.exists(os.path.join(eda_dir, name))
+        ]
+        if existing_images:
+            with st.expander("Exploratory charts"):
+                for name, image_path in existing_images:
+                    st.image(image_path, caption=name.replace("_", " ").removesuffix(".png"), alt=name)
+        st.dataframe(df, hide_index=True, height=440, width="stretch")

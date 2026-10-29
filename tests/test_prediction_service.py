@@ -1,5 +1,31 @@
 import pytest
-from src.prediction_service import PredictionService
+import pandas as pd
+
+from src.prediction_service import PredictionService, get_binary_class_probabilities
+
+
+class ReversedClassModel:
+    classes_ = [1, 0]
+
+    def predict_proba(self, input_df):
+        return [[0.8, 0.2]]
+
+
+def test_binary_probabilities_follow_class_labels_not_array_order():
+    probabilities = get_binary_class_probabilities(ReversedClassModel(), pd.DataFrame([{}]))
+
+    assert probabilities == {1: 0.8, 0: 0.2}
+
+
+def test_binary_probabilities_reject_non_binary_models():
+    class InvalidModel:
+        classes_ = [0, 2]
+
+        def predict_proba(self, input_df):
+            return [[0.5, 0.5]]
+
+    with pytest.raises(ValueError, match="both target classes"):
+        get_binary_class_probabilities(InvalidModel(), pd.DataFrame([{}]))
 
 def test_prediction_service_single():
     service = PredictionService()
